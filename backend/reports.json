@@ -1,10 +1,10 @@
 {
-  "sudameris": {
-    "title": "Report Sudameris",
-    "url": "https://app.powerbi.com/view?r=eyJrIjoiNTBkOTk2MTUtYTI3Ni00OTkxLTg1ZmUtOGNlZmU4MzhjNzI1IiwidCI6ImU3MjVkMTUwLWFkZjEtNDExMy1hNTU2LTU2Y2E4MWEyOGY4NCJ9"
+  "Finance": {
+    "title": "Finance",
+    "url": "https://app.powerbi.com/view?"
   },
-  "Teisa": {
-    "title": "Dashboard Teisa",
-    "url": "https://app.powerbi.com/view?r=eyJrIjoiOGRiMTUxMDgtNTc3NC00YTdjLWE3MzQtMWFkYjg5ODQ0ZDc0IiwidCI6ImU3MjVkMTUwLWFkZjEtNDExMy1hNTU2LTU2Y2E4MWEyOGY4NCJ9"
+  "Sales": {
+    "Sales": "Dashboard Teisa",
+    "url": "https://app.powerbi.com/view?"
   }
 }
