@@ -1,39 +1,51 @@
-# loginbi - semplice portale Power BI con gestione utenti
+# LoginBiAdmin - A web application for controlled access to Power BI reports, featuring user authentication, user management, and report assignment.
 
-Struttura:
+
+🛠️ Project Structure
 - backend/
-  - server.js
-  - users.json
-  - reports.json
+  - server.js
+  - users.json
+  - reports.json
 - frontend/
-  - login.html
-  - login.js
-  - dashboard.html
-  - dashboard.js
-  - admin.html
-  - admin.js
-  - change-password.html
-  - change-password.js
-  - style.css
+  - login.html
+  - login.js
+  - dashboard.html
+  - dashboard.js
+  - admin.html
+  - admin.js
+  - change-password.html
+  - change-password.js
+  - style.css
 
-## Installazione backend
-1. Vai in `backend/`
-2. `npm install`
-3. `npm start` (o `npm run dev` con nodemon)
+  
+🚀 Backend Installation
 
-Il server ascolta su `http://localhost:3000` (porta configurabile via `PORT` env var).
+Go to backend/
 
-## Note di sicurezza / deployment
-- Questo progetto **non** implementa JWT o sessione server-side in; tuttavia usa **bcrypt** per non trasmettere password in chiaro verso il backend.
-- Per produzione:
-  - Servi tutto via HTTPS.
-  - Se possibile aggiungi autenticazione più robusta per le API admin (es. token temporanei, VPN, restrizione IP).
-  - Rendi `adminUsername` verification più forte (es. richiedere anche password admin in body e verificare con bcrypt prima di consentire azioni admin).
-- Il server fa una migrazione automatica: se trovi password in chiaro in `users.json` le converte in hash al primo avvio.
+npm install
 
-## Come usare
-1. Avvia il backend.
-2. Apri `frontend/login.html`.
-3. Esegui login come `admin` (in `users.json`): password `admin123` (verrà hashata al primo avvio).
-4. Dal pannello admin crea gli utenti e assegna report.
+npm start (or npm run dev with nodemon)
 
+The server listens on http://localhost:3000 (port configurable via the PORT environment variable).
+
+🔒 Security / Deployment Notes
+This project does not implement JWT or server-side session management; however, it uses bcrypt to prevent transmitting plaintext passwords to the backend.
+
+For production:
+
+Serve everything over HTTPS.
+
+If possible, add more robust authentication for the admin APIs (e.g., temporary tokens, VPN, IP restriction).
+
+Strengthen the adminUsername verification (e.g., require the admin password in the body and verify it with bcrypt before allowing admin actions).
+
+The server performs an automatic migration: if it finds plaintext passwords in users.json, it converts them to hashes on the first startup.
+
+⚙️ How to Use
+Start the backend.
+
+Open frontend/login.html.
+
+Log in as admin (found in users.json): password admin123 (this will be hashed on first startup).
+
+From the admin panel, create users and assign reports.
