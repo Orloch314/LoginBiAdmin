@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin - Gestione Utenti e Report</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div id="welcome">Pannello Admin</div>
+    <div class="actions">
+      <button id="btnLogout">Logout</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h3>Utenti</h3>
+      <div id="usersList">Caricamento...</div>
+
+      <h4>Crea nuovo utente</h4>
+      <input id="newUsername" placeholder="username" />
+      <input id="newPassword" placeholder="password provvisoria" />
+      <input id="newReports" placeholder='reports (comma separated e.g. "sales,finance")' />
+      <label><input type="checkbox" id="newIsAdmin" /> Is Admin</label>
+      <button id="btnCreateUser">Crea Utente</button>
+      <p id="usersMsg"></p>
+    </section>
+
+    <section class="card">
+      <h3>Reports</h3>
+      <div id="reportsList">Caricamento...</div>
+
+      <h4>Crea/aggiorna report</h4>
+      <input id="reportId" placeholder="id (es: sales)" />
+      <input id="reportTitle" placeholder="titolo" />
+      <input id="reportUrl" placeholder="url (PowerBI)" />
+      <button id="btnSaveReport">Salva Report</button>
+      <p id="reportsMsg"></p>
+    </section>
+  </main>
+
+  <script src="admin.js"></script>
+</body>
+</html>

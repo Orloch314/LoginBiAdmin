@@ -1,0 +1,21 @@
+[
+  {
+    "username": "admin",
+    "password": "$2b$10$Dy1Hd1k69L9oCRjABHSKsulVaJzRD6meaL2hJVYULOWTYAC6YprN.",
+    "reports": [
+      "sudameris"
+    ],
+    "mustChangePassword": false,
+    "isAdmin": true
+  },
+  {
+    "username": "Roberto",
+    "password": "$2b$10$g7qC7wEB4m8YXS7wzv5hYemQvH3DAT9ApzpCqrt4jw8ZcQIiC8PEW",
+    "reports": [
+      "Teisa",
+      "sudameris"
+    ],
+    "mustChangePassword": false,
+    "isAdmin": false
+  }
+]
