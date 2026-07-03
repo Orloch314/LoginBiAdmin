@@ -15,7 +15,8 @@ export const dataFiles = {
   invites: path.join(dataDir, "invites.json"),
   sessions: path.join(dataDir, "sessions.json"),
   accessLog: path.join(dataDir, "access-log.json"),
-  auditLog: path.join(dataDir, "audit-log.json")
+  auditLog: path.join(dataDir, "audit-log.json"),
+  smtpSettings: path.join(dataDir, "smtp-settings.json")
 };
 
 function ensureDir(directory) {
@@ -57,7 +58,8 @@ export function loadState() {
     invites: readJson(dataFiles.invites, []),
     sessions: readJson(dataFiles.sessions, []),
     accessLog: readJson(dataFiles.accessLog, []),
-    auditLog: readJson(dataFiles.auditLog, [])
+    auditLog: readJson(dataFiles.auditLog, []),
+    smtpSettings: readJson(dataFiles.smtpSettings, {})
   };
 }
 
@@ -68,4 +70,5 @@ export function saveState(state) {
   writeJson(dataFiles.sessions, state.sessions);
   writeJson(dataFiles.accessLog, state.accessLog);
   writeJson(dataFiles.auditLog, state.auditLog);
+  writeJson(dataFiles.smtpSettings, state.smtpSettings ?? {});
 }

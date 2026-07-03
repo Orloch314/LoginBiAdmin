@@ -1,44 +1,26 @@
 [
   {
-    "at": "2026-07-03T19:04:03.347Z",
+    "at": "2026-07-03T20:10:46.060Z",
     "actor": "admin",
     "action": "login",
     "subject": "admin",
     "details": {}
   },
   {
-    "at": "2026-07-03T19:04:23.942Z",
-    "actor": "admin",
-    "action": "delete-user",
-    "subject": "mario",
-    "details": {}
-  },
-  {
-    "at": "2026-07-03T19:04:26.477Z",
-    "actor": "admin",
-    "action": "delete-user",
-    "subject": "lucia",
-    "details": {}
-  },
-  {
-    "at": "2026-07-03T19:04:28.721Z",
-    "actor": "admin",
-    "action": "delete-user",
-    "subject": "admin",
-    "details": {}
-  },
-  {
-    "at": "2026-07-03T19:08:20.316Z",
-    "actor": "admin",
-    "action": "login",
-    "subject": "admin",
-    "details": {}
-  },
-  {
-    "at": "2026-07-03T19:08:28.055Z",
+    "at": "2026-07-03T20:10:56.494Z",
     "actor": "admin",
     "action": "delete-report",
     "subject": "sudameris",
     "details": {}
+  },
+  {
+    "at": "2026-07-03T20:11:45.374Z",
+    "actor": "admin",
+    "action": "create-user",
+    "subject": "Roberto",
+    "details": {
+      "role": "user",
+      "reportIds": []
+    }
   }
 ]

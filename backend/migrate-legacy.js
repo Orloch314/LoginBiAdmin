@@ -76,6 +76,7 @@ legacyUsers.forEach((legacyUser, index) => {
   users.push({
     username,
     passwordHash: hashPassword(String(legacyUser?.password ?? "ChangeMe123!")),
+    email: String(legacyUser?.email ?? "").trim().toLowerCase(),
     role: guessRole(username, index),
     active: true,
     reportIds: normalizedReports,

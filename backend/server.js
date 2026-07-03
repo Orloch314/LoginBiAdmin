@@ -8,13 +8,15 @@ import {
   cleanString,
   hashPassword,
   isExpired,
+  normalizeEmail,
   normalizeReportId,
   normalizeUsername,
   nowIso,
   randomToken,
   verifyPassword
 } from "./crypto.js";
-import { dataFiles, ensureStorage, loadState, saveState, publicDir } from "./storage.js";
+import { sendInviteEmail } from "./mailer.js";
+import { ensureStorage, loadState, saveState, publicDir } from "./storage.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,6 +25,8 @@ const sessionDurationHours = Number(process.env.SESSION_DURATION_HOURS ?? 8);
 const inviteDurationDays = Number(process.env.INVITE_DURATION_DAYS ?? 14);
 const bootstrapUsername = cleanString(process.env.BOOTSTRAP_ADMIN_USERNAME ?? "admin");
 const bootstrapPassword = cleanString(process.env.BOOTSTRAP_ADMIN_PASSWORD ?? "admin123!");
+const defaultSmtpPort = 465;
+const defaultInvitePortalPath = "/admin.html";
 
 app.use(cors());
 app.use(express.json());
@@ -47,10 +51,11 @@ function bootstrapData() {
   }
 
   const existingAdmin = state.users.find((user) => normalizeUsername(user.username) === normalizeUsername(bootstrapUsername));
-  if (!existingAdmin && state.users.length === 0) {
+  if (!existingAdmin) {
     state.users.push({
       username: bootstrapUsername,
       passwordHash: hashPassword(bootstrapPassword),
+      email: cleanString(process.env.BOOTSTRAP_ADMIN_EMAIL ?? ""),
       role: "admin",
       active: true,
       reportIds: state.reports.map((report) => report.id),
@@ -59,6 +64,16 @@ function bootstrapData() {
       updatedAt: now,
       lastLoginAt: null
     });
+  } else if (existingAdmin) {
+    existingAdmin.role = "admin";
+    existingAdmin.active = true;
+    existingAdmin.mustSetPassword = false;
+    existingAdmin.passwordHash = existingAdmin.passwordHash || hashPassword(bootstrapPassword);
+    existingAdmin.email = existingAdmin.email ?? "";
+    existingAdmin.reportIds = Array.isArray(existingAdmin.reportIds) && existingAdmin.reportIds.length
+      ? existingAdmin.reportIds
+      : state.reports.map((report) => report.id);
+    existingAdmin.updatedAt = now;
   }
 
   if (!state.invites) {
@@ -76,6 +91,8 @@ function bootstrapData() {
   if (!state.auditLog) {
     state.auditLog = [];
   }
+
+  state.smtpSettings = normalizeSmtpSettings(state.smtpSettings);
 
   saveState(state);
 }
@@ -129,6 +146,114 @@ function findUser(state, username) {
 function findReport(state, reportId) {
   const normalizedReportId = normalizeReportId(reportId);
   return state.reports.find((report) => report.id === normalizedReportId);
+}
+
+function normalizeSmtpSettings(settings = {}) {
+  return {
+    host: cleanString(settings.host),
+    port: Number(settings.port || defaultSmtpPort),
+    user: cleanString(settings.user),
+    password: String(settings.password ?? ""),
+    fromName: cleanString(settings.fromName),
+    fromEmail: normalizeEmail(settings.fromEmail),
+    portalUrl: cleanString(settings.portalUrl),
+    portalPath: cleanString(settings.portalPath || defaultInvitePortalPath)
+  };
+}
+
+function publicSmtpSettings(settings = {}) {
+  const normalized = normalizeSmtpSettings(settings);
+  return {
+    host: normalized.host,
+    port: normalized.port,
+    user: normalized.user,
+    fromName: normalized.fromName,
+    fromEmail: normalized.fromEmail,
+    portalUrl: normalized.portalUrl,
+    portalPath: normalized.portalPath,
+    hasPassword: Boolean(normalized.password)
+  };
+}
+
+function validateSmtpSettings(payload, currentSettings = {}) {
+  const current = normalizeSmtpSettings(currentSettings);
+  const next = {
+    host: cleanString(payload.host),
+    port: Number(payload.port || defaultSmtpPort),
+    user: cleanString(payload.user),
+    password: payload.clearPassword === true ? "" : current.password,
+    fromName: cleanString(payload.fromName),
+    fromEmail: normalizeEmail(payload.fromEmail),
+    portalUrl: cleanString(payload.portalUrl),
+    portalPath: cleanString(payload.portalPath || defaultInvitePortalPath)
+  };
+
+  if (payload.password) {
+    next.password = String(payload.password);
+  }
+
+  if (!next.host) {
+    return { error: "Host SMTP obbligatorio" };
+  }
+
+  if (!Number.isInteger(next.port) || next.port < 1 || next.port > 65535) {
+    return { error: "Porta SMTP non valida" };
+  }
+
+  if (!next.user) {
+    return { error: "Utente SMTP obbligatorio" };
+  }
+
+  if (!next.password) {
+    return { error: "Password SMTP obbligatoria" };
+  }
+
+  if (!next.fromName) {
+    return { error: "Nome mittente obbligatorio" };
+  }
+
+  if (!next.fromEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(next.fromEmail)) {
+    return { error: "Email mittente non valida" };
+  }
+
+  if (!next.portalUrl) {
+    return { error: "URL portale obbligatorio" };
+  }
+
+  try {
+    new URL(next.portalUrl);
+  } catch {
+    return { error: "URL portale non valido" };
+  }
+
+  next.portalPath = next.portalPath.startsWith("/") ? next.portalPath : `/${next.portalPath}`;
+
+  return { settings: next };
+}
+
+function getSmtpReadyError(settings = {}) {
+  const validation = validateSmtpSettings({ ...settings, password: settings.password }, settings);
+  return validation.error ?? null;
+}
+
+function buildInviteLink(state, token) {
+  const settings = normalizeSmtpSettings(state.smtpSettings);
+  const base = settings.portalUrl.replace(/\/+$/, "");
+  const portalPath = settings.portalPath.startsWith("/") ? settings.portalPath : `/${settings.portalPath}`;
+  return `${base}${portalPath}?invite=${encodeURIComponent(token)}`;
+}
+
+function validateEmail(email) {
+  const normalized = normalizeEmail(email);
+  if (!normalized) {
+    return { error: "Email obbligatoria" };
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+    return { error: "Email non valida" };
+  }
+
+  return { email: normalized };
 }
 
 function resolveReports(state, reportIds) {
@@ -261,11 +386,17 @@ function ensureValidUserPayload(state, payload, allowRole = true) {
     return { error: `Report non trovati: ${invalidReportIds.join(", ")}` };
   }
 
+  const emailValidation = payload.email !== undefined ? validateEmail(payload.email) : null;
+  if (emailValidation?.error) {
+    return { error: emailValidation.error };
+  }
+
   return {
     username,
     normalizedUsername,
     role: allowRole ? cleanString(payload.role ?? "user").toLowerCase() : "user",
-    reportIds
+    reportIds,
+    email: emailValidation?.email ?? normalizeEmail(payload.email)
   };
 }
 
@@ -278,6 +409,7 @@ function publicUserList(state) {
         role: user.role,
         active: user.active !== false,
         mustSetPassword: Boolean(user.mustSetPassword),
+        email: cleanString(user.email ?? ""),
         reportIds: Array.isArray(user.reportIds) ? user.reportIds : [],
         lastLoginAt: stats.lastLoginAt,
         logins7d: stats.logins7d,
@@ -309,6 +441,37 @@ function createInviteForUser(state, username, createdBy) {
   }
 
   return token;
+}
+
+async function sendInviteForUser(state, user, token) {
+  if (!user.email) {
+    return { sent: false, error: "Email destinatario mancante" };
+  }
+
+  const smtpSettings = normalizeSmtpSettings(state.smtpSettings);
+  const configError = getSmtpReadyError(smtpSettings);
+  if (configError) {
+    return { sent: false, error: `Configurazione SMTP incompleta: ${configError}` };
+  }
+
+  try {
+    await sendInviteEmail({
+      smtpHost: smtpSettings.host,
+      smtpPort: smtpSettings.port,
+      smtpUser: smtpSettings.user,
+      smtpPassword: smtpSettings.password,
+      fromName: smtpSettings.fromName,
+      fromEmail: smtpSettings.fromEmail,
+      toEmail: user.email,
+      username: user.username,
+      inviteLink: buildInviteLink(state, token)
+    });
+    return { sent: true };
+  } catch (error) {
+    logAudit(state, "system", "invite-email-failed", user.username, { error: String(error?.message ?? error) });
+    saveFreshState(state);
+    return { sent: false, error: String(error?.message ?? error) };
+  }
 }
 
 function consumeInvite(state, token) {
@@ -444,17 +607,47 @@ app.get("/api/admin/state", requireSession, requireAdmin, (req, res) => {
   res.json({
     users: publicUserList(state),
     reports: state.reports.sort((left, right) => left.title.localeCompare(right.title)),
-    pendingInvites
+    pendingInvites,
+    smtpSettings: publicSmtpSettings(state.smtpSettings)
   });
 });
 
-app.post("/api/admin/users", requireSession, requireAdmin, (req, res) => {
+app.put("/api/admin/smtp-settings", requireSession, requireAdmin, (req, res) => {
+  const state = loadFreshState();
+  cleanExpiredState(state);
+
+  const validation = validateSmtpSettings(req.body, state.smtpSettings);
+  if (validation.error) {
+    return res.status(400).json({ error: validation.error });
+  }
+
+  state.smtpSettings = validation.settings;
+  logAudit(state, req.auth.user.username, "update-smtp-settings", "smtp-settings", {
+    host: state.smtpSettings.host,
+    port: state.smtpSettings.port,
+    user: state.smtpSettings.user,
+    fromName: state.smtpSettings.fromName,
+    fromEmail: state.smtpSettings.fromEmail,
+    portalUrl: state.smtpSettings.portalUrl,
+    portalPath: state.smtpSettings.portalPath,
+    hasPassword: Boolean(state.smtpSettings.password)
+  });
+  saveFreshState(state);
+
+  res.json({ smtpSettings: publicSmtpSettings(state.smtpSettings) });
+});
+
+app.post("/api/admin/users", requireSession, requireAdmin, async (req, res) => {
   const state = loadFreshState();
   cleanExpiredState(state);
 
   const validation = ensureValidUserPayload(state, req.body, true);
   if (validation.error) {
     return res.status(400).json({ error: validation.error });
+  }
+
+  if (!validation.email) {
+    return res.status(400).json({ error: "Email obbligatoria" });
   }
 
   if (state.users.some((user) => normalizeUsername(user.username) === validation.normalizedUsername)) {
@@ -465,6 +658,7 @@ app.post("/api/admin/users", requireSession, requireAdmin, (req, res) => {
   const user = {
     username: validation.username,
     passwordHash: null,
+    email: validation.email,
     role: validation.role,
     active: false,
     reportIds: validation.reportIds,
@@ -476,26 +670,31 @@ app.post("/api/admin/users", requireSession, requireAdmin, (req, res) => {
 
   state.users.push(user);
   const inviteToken = createInviteForUser(state, user.username, req.auth.user.username);
+  const inviteLink = buildInviteLink(state, inviteToken);
   logAudit(state, req.auth.user.username, "create-user", user.username, {
     role: user.role,
     reportIds: user.reportIds
   });
   saveFreshState(state);
+  const emailStatus = await sendInviteForUser(state, user, inviteToken);
 
   res.status(201).json({
     user: {
       username: user.username,
+      email: user.email,
       role: user.role,
       active: user.active,
       reportIds: user.reportIds,
       mustSetPassword: user.mustSetPassword
     },
     inviteToken,
-    inviteLink: `${req.protocol}://${req.get("host")}/login.html?invite=${inviteToken}`
+    inviteLink,
+    emailSent: emailStatus.sent,
+    emailError: emailStatus.error ?? null
   });
 });
 
-app.put("/api/admin/users/:username", requireSession, requireAdmin, (req, res) => {
+app.put("/api/admin/users/:username", requireSession, requireAdmin, async (req, res) => {
   const state = loadFreshState();
   cleanExpiredState(state);
 
@@ -507,6 +706,14 @@ app.put("/api/admin/users/:username", requireSession, requireAdmin, (req, res) =
   const role = cleanString(req.body.role ?? user.role).toLowerCase();
   if (!["admin", "user"].includes(role)) {
     return res.status(400).json({ error: "Ruolo non valido" });
+  }
+
+  if (req.body.email !== undefined) {
+    const emailValidation = validateEmail(req.body.email);
+    if (emailValidation.error) {
+      return res.status(400).json({ error: emailValidation.error });
+    }
+    user.email = emailValidation.email;
   }
 
   const reportIds = Array.isArray(req.body.reportIds)
@@ -528,19 +735,24 @@ app.put("/api/admin/users/:username", requireSession, requireAdmin, (req, res) =
 
   if (req.body.resetInvite === true) {
     const inviteToken = createInviteForUser(state, user.username, req.auth.user.username);
+    const inviteLink = buildInviteLink(state, inviteToken);
     logAudit(state, req.auth.user.username, "reset-invite", user.username);
     saveFreshState(state);
+    const emailStatus = await sendInviteForUser(state, user, inviteToken);
 
     return res.json({
       user: {
         username: user.username,
+        email: user.email ?? "",
         role: user.role,
         active: user.active,
         reportIds: user.reportIds,
         mustSetPassword: user.mustSetPassword
       },
       inviteToken,
-      inviteLink: `${req.protocol}://${req.get("host")}/login.html?invite=${inviteToken}`
+      inviteLink,
+      emailSent: emailStatus.sent,
+      emailError: emailStatus.error ?? null
     });
   }
 
@@ -554,6 +766,7 @@ app.put("/api/admin/users/:username", requireSession, requireAdmin, (req, res) =
   res.json({
     user: {
       username: user.username,
+      email: user.email ?? "",
       role: user.role,
       active: user.active,
       reportIds: user.reportIds,
@@ -562,7 +775,7 @@ app.put("/api/admin/users/:username", requireSession, requireAdmin, (req, res) =
   });
 });
 
-app.post("/api/admin/users/:username/resend-invite", requireSession, requireAdmin, (req, res) => {
+app.post("/api/admin/users/:username/resend-invite", requireSession, requireAdmin, async (req, res) => {
   const state = loadFreshState();
   cleanExpiredState(state);
 
@@ -572,12 +785,16 @@ app.post("/api/admin/users/:username/resend-invite", requireSession, requireAdmi
   }
 
   const inviteToken = createInviteForUser(state, user.username, req.auth.user.username);
+  const inviteLink = buildInviteLink(state, inviteToken);
   logAudit(state, req.auth.user.username, "resend-invite", user.username);
   saveFreshState(state);
+  const emailStatus = await sendInviteForUser(state, user, inviteToken);
 
   res.json({
     inviteToken,
-    inviteLink: `${req.protocol}://${req.get("host")}/login.html?invite=${inviteToken}`
+    inviteLink,
+    emailSent: emailStatus.sent,
+    emailError: emailStatus.error ?? null
   });
 });
 
@@ -710,7 +927,8 @@ app.get("/api/admin/export", requireSession, requireAdmin, (req, res) => {
     invites: state.invites,
     sessions: state.sessions,
     accessLog: state.accessLog,
-    auditLog: state.auditLog
+    auditLog: state.auditLog,
+    smtpSettings: publicSmtpSettings(state.smtpSettings)
   });
 });
 

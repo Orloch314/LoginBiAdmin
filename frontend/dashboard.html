@@ -29,6 +29,7 @@
           <h3>Nuovo utente</h3>
           <form id="createUserForm">
             <input id="newUsername" placeholder="Username" />
+            <input id="newEmail" type="email" placeholder="Email destinatario" />
             <select id="newRole">
               <option value="user">User</option>
               <option value="admin">Admin</option>
@@ -46,6 +47,7 @@
           <h3>Assegna report</h3>
           <form id="assignReportsForm">
             <select id="selectedUser"></select>
+            <input id="selectedUserEmail" type="email" placeholder="Email destinatario" />
             <div>
               <strong>Report disponibili</strong>
               <div id="assignReportList" class="checkbox-list"></div>
@@ -84,6 +86,27 @@
         </div>
 
         <div class="card">
+          <h3>Configurazione SMTP</h3>
+          <form id="smtpSettingsForm">
+            <input id="smtpHost" placeholder="Host SMTP" />
+            <input id="smtpPort" type="number" min="1" max="65535" placeholder="Porta SMTP" />
+            <input id="smtpUser" placeholder="Utente SMTP" />
+            <input id="smtpPassword" type="password" autocomplete="new-password" placeholder="Password SMTP" />
+            <input id="smtpFromName" placeholder="Nome mittente" />
+            <input id="smtpFromEmail" type="email" placeholder="Email mittente" />
+            <input id="smtpPortalUrl" placeholder="URL portale" />
+            <input id="smtpPortalPath" placeholder="Pagina invito" />
+            <label class="checkbox-item">
+              <input id="smtpClearPassword" type="checkbox" />
+              Cancella password SMTP salvata
+            </label>
+            <button type="submit">Salva SMTP</button>
+          </form>
+          <div id="smtpPasswordStatus" class="muted"></div>
+          <div id="smtpSettingsResult" class="invite-box hidden"></div>
+        </div>
+
+        <div class="card">
           <h3>Accessi utenti</h3>
           <div class="table-wrap">
             <table>
@@ -94,6 +117,7 @@
                   <th>Ultimo accesso</th>
                   <th>7 giorni</th>
                   <th>30 giorni</th>
+                  <th>Email</th>
                   <th>Stato</th>
                   <th>Report</th>
                   <th>Azioni</th>

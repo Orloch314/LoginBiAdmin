@@ -12,6 +12,10 @@ export function cleanString(value) {
   return String(value ?? "").trim();
 }
 
+export function normalizeEmail(email) {
+  return cleanString(email).toLowerCase();
+}
+
 export function randomToken() {
   return crypto.randomUUID();
 }

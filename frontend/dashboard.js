@@ -13,9 +13,12 @@ const logoutBtn = document.getElementById("logoutBtn");
 const createUserForm = document.getElementById("createUserForm");
 const assignReportsForm = document.getElementById("assignReportsForm");
 const reportForm = document.getElementById("reportForm");
+const smtpSettingsForm = document.getElementById("smtpSettingsForm");
 const createUserResult = document.getElementById("createUserResult");
 const assignResult = document.getElementById("assignResult");
+const smtpSettingsResult = document.getElementById("smtpSettingsResult");
 const selectedUser = document.getElementById("selectedUser");
+const selectedUserEmail = document.getElementById("selectedUserEmail");
 const selectedUserActive = document.getElementById("selectedUserActive");
 const selectedUserAdmin = document.getElementById("selectedUserAdmin");
 const resendInviteBtn = document.getElementById("resendInviteBtn");
@@ -26,7 +29,8 @@ const reportActive = document.getElementById("reportActive");
 const clearReportFormBtn = document.getElementById("clearReportFormBtn");
 const newUserReports = document.getElementById("newUserReports");
 const assignReportList = document.getElementById("assignReportList");
-let dashboardState = { users: [], reports: [], pendingInvites: [] };
+const smtpPasswordStatus = document.getElementById("smtpPasswordStatus");
+let dashboardState = { users: [], reports: [], pendingInvites: [], smtpSettings: {} };
 let editingReportId = null;
 
 function setBoxMessage(element, text, type = "success") {
@@ -151,6 +155,7 @@ function renderUsersTable(users) {
           <td>${escapeHtml(formatDate(entry.lastLoginAt))}</td>
           <td>${escapeHtml(entry.logins7d)}</td>
           <td>${escapeHtml(entry.logins30d)}</td>
+          <td>${escapeHtml(entry.email || "")}</td>
           <td>${status}</td>
           <td>${reportCount}</td>
           <td>
@@ -198,6 +203,21 @@ function renderPendingInvites(invites) {
     .join("");
 }
 
+function renderSmtpSettings(settings = {}) {
+  document.getElementById("smtpHost").value = settings.host || "";
+  document.getElementById("smtpPort").value = settings.port || 465;
+  document.getElementById("smtpUser").value = settings.user || "";
+  document.getElementById("smtpPassword").value = "";
+  document.getElementById("smtpFromName").value = settings.fromName || "";
+  document.getElementById("smtpFromEmail").value = settings.fromEmail || "";
+  document.getElementById("smtpPortalUrl").value = settings.portalUrl || "";
+  document.getElementById("smtpPortalPath").value = settings.portalPath || "/admin.html";
+  document.getElementById("smtpClearPassword").checked = false;
+  smtpPasswordStatus.innerText = settings.hasPassword
+    ? "Password SMTP configurata."
+    : "Password SMTP non configurata.";
+}
+
 function refreshSelectedUserPanel() {
   const userName = selectedUser.value;
   const selected = dashboardState.users.find((entry) => entry.username === userName);
@@ -207,6 +227,7 @@ function refreshSelectedUserPanel() {
 
   selectedUserActive.checked = selected.active;
   selectedUserAdmin.checked = selected.role === "admin";
+  selectedUserEmail.value = selected.email || "";
 
   [...document.querySelectorAll('input[name="assignReportIds"]')].forEach((input) => {
     input.checked = (selected.reportIds || []).includes(input.value);
@@ -234,6 +255,7 @@ async function loadDashboard() {
       renderUsersTable(adminState.users);
       renderReportsTable(adminState.reports);
       renderPendingInvites(adminState.pendingInvites);
+      renderSmtpSettings(adminState.smtpSettings);
     }
   } catch (error) {
     localStorage.clear();
@@ -261,6 +283,7 @@ createUserForm.addEventListener("submit", async (event) => {
   try {
     const payload = {
       username: document.getElementById("newUsername").value,
+      email: document.getElementById("newEmail").value,
       role: document.getElementById("newRole").value,
       reportIds: selectedCheckboxValues("newUserReportIds")
     };
@@ -270,7 +293,12 @@ createUserForm.addEventListener("submit", async (event) => {
       body: JSON.stringify(payload)
     });
 
-    setBoxMessage(createUserResult, `Utente creato. Invito: ${response.inviteLink}`);
+    setBoxMessage(
+      createUserResult,
+      response.emailSent
+        ? `Utente creato. Email inviata. Invito: ${response.inviteLink}`
+        : `Utente creato. Invito: ${response.inviteLink}. Email non inviata: ${response.emailError || "n/d"}`
+    );
     createUserForm.reset();
     await loadDashboard();
   } catch (error) {
@@ -292,6 +320,7 @@ assignReportsForm.addEventListener("submit", async (event) => {
     const response = await requestJson(`/api/admin/users/${encodeURIComponent(username)}`, {
       method: "PUT",
       body: JSON.stringify({
+        email: selectedUserEmail.value,
         role: selectedUserAdmin.checked ? "admin" : "user",
         active: selectedUserActive.checked,
         reportIds: selectedCheckboxValues("assignReportIds")
@@ -319,7 +348,12 @@ resendInviteBtn.addEventListener("click", async () => {
       method: "POST"
     });
 
-    setBoxMessage(assignResult, `Nuovo invito: ${response.inviteLink}`);
+    setBoxMessage(
+      assignResult,
+      response.emailSent
+        ? `Nuovo invito. Email inviata: ${response.inviteLink}`
+        : `Nuovo invito: ${response.inviteLink}. Email non inviata: ${response.emailError || "n/d"}`
+    );
   } catch (error) {
     setBoxMessage(assignResult, error.message, "error");
   }
@@ -359,6 +393,34 @@ clearReportFormBtn.addEventListener("click", () => {
   editingReportId = null;
   reportForm.reset();
   reportActive.checked = true;
+});
+
+smtpSettingsForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  smtpSettingsResult.classList.add("hidden");
+
+  try {
+    const response = await requestJson("/api/admin/smtp-settings", {
+      method: "PUT",
+      body: JSON.stringify({
+        host: document.getElementById("smtpHost").value,
+        port: document.getElementById("smtpPort").value,
+        user: document.getElementById("smtpUser").value,
+        password: document.getElementById("smtpPassword").value,
+        fromName: document.getElementById("smtpFromName").value,
+        fromEmail: document.getElementById("smtpFromEmail").value,
+        portalUrl: document.getElementById("smtpPortalUrl").value,
+        portalPath: document.getElementById("smtpPortalPath").value,
+        clearPassword: document.getElementById("smtpClearPassword").checked
+      })
+    });
+
+    dashboardState.smtpSettings = response.smtpSettings;
+    renderSmtpSettings(response.smtpSettings);
+    setBoxMessage(smtpSettingsResult, "Configurazione SMTP salvata.");
+  } catch (error) {
+    setBoxMessage(smtpSettingsResult, error.message, "error");
+  }
 });
 
 document.addEventListener("click", async (event) => {

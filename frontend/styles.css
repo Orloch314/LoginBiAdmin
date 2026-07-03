@@ -55,6 +55,23 @@ textarea {
   background: #fff;
 }
 
+.password-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  margin-bottom: 12px;
+}
+
+.password-row input {
+  margin-bottom: 0;
+  flex: 1;
+}
+
+.password-toggle {
+  width: 46px;
+  padding: 0;
+}
+
 button {
   border: 0;
   border-radius: 6px;

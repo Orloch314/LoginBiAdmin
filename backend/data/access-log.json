@@ -10,5 +10,11 @@
     "at": "2026-07-03T19:08:20.316Z",
     "type": "login",
     "sessionToken": "4d5d602a-b2ba-4a69-9a92-de5f6a4aed12"
+  },
+  {
+    "username": "admin",
+    "at": "2026-07-03T20:10:46.059Z",
+    "type": "login",
+    "sessionToken": "0644ce41-eef3-468a-8cb4-c4d4e9f4bf33"
   }
 ]

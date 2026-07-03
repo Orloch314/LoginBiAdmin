@@ -4,6 +4,9 @@ const loginForm = document.getElementById("loginForm");
 const inviteForm = document.getElementById("inviteForm");
 const message = document.getElementById("message");
 const subtitle = document.getElementById("subtitle");
+const togglePassword = document.getElementById("togglePassword");
+const toggleInvitePassword = document.getElementById("toggleInvitePassword");
+const toggleInvitePasswordConfirm = document.getElementById("toggleInvitePasswordConfirm");
 const params = new URLSearchParams(window.location.search);
 const inviteToken = params.get("invite");
 
@@ -20,6 +23,14 @@ function storeSession(data) {
 
 function redirectToDashboard() {
   window.location.href = "dashboard.html";
+}
+
+function toggleFieldVisibility(inputId, buttonId) {
+  const input = document.getElementById(inputId);
+  const button = document.getElementById(buttonId);
+  const isHidden = input.type === "password";
+  input.type = isHidden ? "text" : "password";
+  button.setAttribute("aria-label", isHidden ? "Nascondi password" : "Mostra password");
 }
 
 async function requestJson(url, options = {}) {
@@ -45,6 +56,10 @@ if (inviteToken) {
   subtitle.innerText = "Completa l'attivazione del tuo account con il token ricevuto.";
   document.getElementById("inviteToken").value = inviteToken;
 }
+
+togglePassword.addEventListener("click", () => toggleFieldVisibility("password", "togglePassword"));
+toggleInvitePassword.addEventListener("click", () => toggleFieldVisibility("invitePassword", "toggleInvitePassword"));
+toggleInvitePasswordConfirm.addEventListener("click", () => toggleFieldVisibility("invitePasswordConfirm", "toggleInvitePasswordConfirm"));
 
 loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();

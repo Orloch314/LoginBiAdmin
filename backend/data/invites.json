@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "token": "c394255f-bfa5-428e-a92b-7fb444e22034",
+    "username": "Roberto",
+    "createdAt": "2026-07-03T20:11:45.374Z",
+    "expiresAt": "2026-07-17T20:11:45.374Z",
+    "usedAt": null,
+    "createdBy": "admin"
+  }
+]

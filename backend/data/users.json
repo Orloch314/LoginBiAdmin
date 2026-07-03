@@ -2,12 +2,25 @@
   {
     "username": "admin",
     "passwordHash": "restore-admin-salt-20260703:da709beb52a28ae7c98335af1fa9b65d6715ed3b0087b51695061e4bae6e3385521826c519d317b920e61e40dacfd8c63161b65241b8cc7b0b13f30325b8e07c",
+    "email": "",
     "role": "admin",
     "active": true,
     "reportIds": [],
     "mustSetPassword": false,
     "createdAt": "2026-07-03T00:00:00.000Z",
-    "updatedAt": "2026-07-03T19:08:20.316Z",
-    "lastLoginAt": "2026-07-03T19:08:20.316Z"
+    "updatedAt": "2026-07-03T20:10:46.059Z",
+    "lastLoginAt": "2026-07-03T20:10:46.059Z"
+  },
+  {
+    "username": "Roberto",
+    "passwordHash": null,
+    "email": "roberto.riva@cidesa.com.py",
+    "role": "user",
+    "active": false,
+    "reportIds": [],
+    "mustSetPassword": true,
+    "createdAt": "2026-07-03T20:11:45.374Z",
+    "updatedAt": "2026-07-03T20:11:45.374Z",
+    "lastLoginAt": null
   }
 ]

@@ -16,14 +16,23 @@
 
       <form id="loginForm">
         <input id="username" autocomplete="username" placeholder="Utente" />
-        <input id="password" type="password" autocomplete="current-password" placeholder="Password" />
+        <div class="password-row">
+          <input id="password" type="password" autocomplete="current-password" placeholder="Password" />
+          <button id="togglePassword" type="button" class="secondary password-toggle" aria-label="Mostra password">👁</button>
+        </div>
         <button type="submit">Entra</button>
       </form>
 
       <form id="inviteForm" class="hidden">
         <input id="inviteToken" placeholder="Token invito" />
-        <input id="invitePassword" type="password" autocomplete="new-password" placeholder="Nuova password" />
-        <input id="invitePasswordConfirm" type="password" autocomplete="new-password" placeholder="Conferma password" />
+        <div class="password-row">
+          <input id="invitePassword" type="password" autocomplete="new-password" placeholder="Nuova password" />
+          <button id="toggleInvitePassword" type="button" class="secondary password-toggle" aria-label="Mostra nuova password">👁</button>
+        </div>
+        <div class="password-row">
+          <input id="invitePasswordConfirm" type="password" autocomplete="new-password" placeholder="Conferma password" />
+          <button id="toggleInvitePasswordConfirm" type="button" class="secondary password-toggle" aria-label="Mostra conferma password">👁</button>
+        </div>
         <button type="submit">Attiva account</button>
       </form>
     </div>
