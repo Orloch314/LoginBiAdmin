@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Power BI</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="page">
+    <div class="toolbar">
+      <button id="logoutBtn">Logout</button>
+    </div>
+
+    <div class="card">
+      <h2 id="welcome">Dashboard</h2>
+      <p id="userSubtitle" class="muted"></p>
+      <div id="summary" class="grid-2"></div>
+    </div>
+
+    <div id="reportsSection" class="card" style="margin-top:16px;">
+      <h3>Report assegnati</h3>
+      <div id="reports"></div>
+    </div>
+
+    <div id="adminSection" class="hidden" style="margin-top:16px;">
+      <div class="row">
+        <div class="card">
+          <h3>Nuovo utente</h3>
+          <form id="createUserForm">
+            <input id="newUsername" placeholder="Username" />
+            <select id="newRole">
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+            <div>
+              <strong>Report assegnati</strong>
+              <div id="newUserReports" class="checkbox-list"></div>
+            </div>
+            <button type="submit">Crea utente e invia token</button>
+          </form>
+          <div id="createUserResult" class="invite-box hidden"></div>
+        </div>
+
+        <div class="card">
+          <h3>Assegna report</h3>
+          <form id="assignReportsForm">
+            <select id="selectedUser"></select>
+            <div>
+              <strong>Report disponibili</strong>
+              <div id="assignReportList" class="checkbox-list"></div>
+            </div>
+            <label class="checkbox-item">
+              <input id="selectedUserActive" type="checkbox" />
+              Utente attivo
+            </label>
+            <label class="checkbox-item">
+              <input id="selectedUserAdmin" type="checkbox" />
+              Ruolo admin
+            </label>
+            <button type="submit">Salva assegnazioni</button>
+            <button id="resendInviteBtn" type="button" class="secondary">Rigenera token invito</button>
+          </form>
+          <div id="assignResult" class="invite-box hidden"></div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:16px;">
+        <div class="card">
+          <h3>Catalogo report</h3>
+          <form id="reportForm">
+            <input id="reportId" placeholder="Codice report" />
+            <input id="reportTitle" placeholder="Titolo report" />
+            <input id="reportUrl" placeholder="URL Power BI" />
+            <label class="checkbox-item">
+              <input id="reportActive" type="checkbox" checked />
+              Report attivo
+            </label>
+            <div class="toolbar">
+              <button type="submit">Salva report</button>
+              <button id="clearReportFormBtn" type="button" class="secondary">Pulisci</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>Accessi utenti</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Utente</th>
+                  <th>Ruolo</th>
+                  <th>Ultimo accesso</th>
+                  <th>7 giorni</th>
+                  <th>30 giorni</th>
+                  <th>Stato</th>
+                  <th>Report</th>
+                  <th>Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="usersTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:16px;">
+        <div class="card">
+          <h3>Report disponibili</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Codice</th>
+                  <th>Titolo</th>
+                  <th>Stato</th>
+                  <th>Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="reportsTable"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Inviti pendenti</h3>
+          <div id="pendingInvites" class="muted"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

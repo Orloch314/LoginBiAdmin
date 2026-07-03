@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - Power BI Portal</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="centered">
+    <div class="card login-box">
+      <h2>Accesso Riservato</h2>
+      <p id="subtitle" class="muted">Accedi con username e password oppure completa l'invito.</p>
+
+      <div id="message" class="error"></div>
+
+      <form id="loginForm">
+        <input id="username" autocomplete="username" placeholder="Utente" />
+        <input id="password" type="password" autocomplete="current-password" placeholder="Password" />
+        <button type="submit">Entra</button>
+      </form>
+
+      <form id="inviteForm" class="hidden">
+        <input id="inviteToken" placeholder="Token invito" />
+        <input id="invitePassword" type="password" autocomplete="new-password" placeholder="Nuova password" />
+        <input id="invitePasswordConfirm" type="password" autocomplete="new-password" placeholder="Conferma password" />
+        <button type="submit">Attiva account</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="login.js"></script>
+</body>
+</html>

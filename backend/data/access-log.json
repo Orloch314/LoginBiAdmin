@@ -1,0 +1,14 @@
+[
+  {
+    "username": "admin",
+    "at": "2026-07-03T19:04:03.347Z",
+    "type": "login",
+    "sessionToken": "7400d98f-6eb4-43d3-8182-67b4ff2d502e"
+  },
+  {
+    "username": "admin",
+    "at": "2026-07-03T19:08:20.316Z",
+    "type": "login",
+    "sessionToken": "4d5d602a-b2ba-4a69-9a92-de5f6a4aed12"
+  }
+]
