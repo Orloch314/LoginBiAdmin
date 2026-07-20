@@ -5,15 +5,18 @@ const welcome = document.getElementById("welcome");
 const userSubtitle = document.getElementById("userSubtitle");
 const summary = document.getElementById("summary");
 const reportsContainer = document.getElementById("reports");
+const reportsSection = document.getElementById("reportsSection");
 const adminSection = document.getElementById("adminSection");
 const usersTable = document.getElementById("usersTable");
 const reportsTable = document.getElementById("reportsTable");
 const pendingInvites = document.getElementById("pendingInvites");
 const logoutBtn = document.getElementById("logoutBtn");
+const changePasswordForm = document.getElementById("changePasswordForm");
 const createUserForm = document.getElementById("createUserForm");
 const assignReportsForm = document.getElementById("assignReportsForm");
 const reportForm = document.getElementById("reportForm");
 const smtpSettingsForm = document.getElementById("smtpSettingsForm");
+const changePasswordResult = document.getElementById("changePasswordResult");
 const createUserResult = document.getElementById("createUserResult");
 const assignResult = document.getElementById("assignResult");
 const smtpSettingsResult = document.getElementById("smtpSettingsResult");
@@ -31,6 +34,7 @@ const newUserReports = document.getElementById("newUserReports");
 const assignReportList = document.getElementById("assignReportList");
 const smtpPasswordStatus = document.getElementById("smtpPasswordStatus");
 let dashboardState = { users: [], reports: [], pendingInvites: [], smtpSettings: {} };
+let currentUser = user;
 let editingReportId = null;
 
 function setBoxMessage(element, text, type = "success") {
@@ -73,6 +77,14 @@ function reportCheckboxHtml(reports, name, selectedIds = []) {
 
 function selectedCheckboxValues(name) {
   return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map((input) => input.value);
+}
+
+function toggleFieldVisibility(inputId, buttonId) {
+  const input = document.getElementById(inputId);
+  const button = document.getElementById(buttonId);
+  const isHidden = input.type === "password";
+  input.type = isHidden ? "text" : "password";
+  button.setAttribute("aria-label", isHidden ? "Nascondi password" : "Mostra password");
 }
 
 async function requestJson(url, options = {}) {
@@ -147,6 +159,10 @@ function renderUsersTable(users) {
     .map((entry) => {
       const status = entry.active ? '<span class="status-pill ok">attivo</span>' : '<span class="status-pill warn">inattivo</span>';
       const reportCount = Array.isArray(entry.reportIds) ? entry.reportIds.length : 0;
+      const isCurrentUser = currentUser && entry.username === currentUser.username;
+      const selfAction = isCurrentUser
+        ? '<button type="button" class="secondary" data-action="focus-password">Password</button>'
+        : `<button type="button" class="danger" data-action="delete-user" data-user="${escapeHtml(entry.username)}">Elimina</button>`;
 
       return `
         <tr>
@@ -161,7 +177,7 @@ function renderUsersTable(users) {
           <td>
             <button type="button" class="secondary" data-action="select-user" data-user="${escapeHtml(entry.username)}">Seleziona</button>
             <button type="button" class="secondary" data-action="invite-user" data-user="${escapeHtml(entry.username)}">Token</button>
-            <button type="button" class="danger" data-action="delete-user" data-user="${escapeHtml(entry.username)}">Elimina</button>
+            ${selfAction}
           </td>
         </tr>`;
     })
@@ -242,12 +258,13 @@ async function loadDashboard() {
 
   try {
     const me = await requestJson("/api/me");
+    currentUser = me.user;
     welcome.innerText = `Benvenuto, ${me.user.username}!`;
     userSubtitle.innerText = `Ruolo: ${me.user.role}`;
     renderSummary(me.user);
-    renderReports(me.reports);
 
     if (me.isAdmin) {
+      reportsSection.classList.add("hidden");
       adminSection.classList.remove("hidden");
       const adminState = await requestJson("/api/admin/state");
       dashboardState = adminState;
@@ -256,6 +273,10 @@ async function loadDashboard() {
       renderReportsTable(adminState.reports);
       renderPendingInvites(adminState.pendingInvites);
       renderSmtpSettings(adminState.smtpSettings);
+    } else {
+      reportsSection.classList.remove("hidden");
+      adminSection.classList.add("hidden");
+      renderReports(me.reports);
     }
   } catch (error) {
     localStorage.clear();
@@ -265,6 +286,18 @@ async function loadDashboard() {
 
 selectedUser.addEventListener("change", refreshSelectedUserPanel);
 
+document.getElementById("toggleCurrentPassword").addEventListener("click", () => {
+  toggleFieldVisibility("currentPassword", "toggleCurrentPassword");
+});
+
+document.getElementById("toggleNewPassword").addEventListener("click", () => {
+  toggleFieldVisibility("newPassword", "toggleNewPassword");
+});
+
+document.getElementById("toggleConfirmNewPassword").addEventListener("click", () => {
+  toggleFieldVisibility("confirmNewPassword", "toggleConfirmNewPassword");
+});
+
 logoutBtn.addEventListener("click", async () => {
   try {
     await requestJson("/api/auth/logout", { method: "POST" });
@@ -273,6 +306,27 @@ logoutBtn.addEventListener("click", async () => {
   } finally {
     localStorage.clear();
     window.location.href = "login.html";
+  }
+});
+
+changePasswordForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  changePasswordResult.classList.add("hidden");
+
+  try {
+    await requestJson("/api/me/password", {
+      method: "PUT",
+      body: JSON.stringify({
+        currentPassword: document.getElementById("currentPassword").value,
+        newPassword: document.getElementById("newPassword").value,
+        confirmPassword: document.getElementById("confirmNewPassword").value
+      })
+    });
+
+    changePasswordForm.reset();
+    setBoxMessage(changePasswordResult, "Password aggiornata.");
+  } catch (error) {
+    setBoxMessage(changePasswordResult, error.message, "error");
   }
 });
 
@@ -455,6 +509,12 @@ document.addEventListener("click", async (event) => {
 
       await requestJson(`/api/admin/users/${encodeURIComponent(userName)}`, { method: "DELETE" });
       await loadDashboard();
+      return;
+    }
+
+    if (action === "focus-password") {
+      document.getElementById("currentPassword").focus();
+      changePasswordForm.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 

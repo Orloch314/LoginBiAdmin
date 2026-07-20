@@ -26,6 +26,26 @@
     <div id="adminSection" class="hidden" style="margin-top:16px;">
       <div class="row">
         <div class="card">
+          <h3>Cambia password admin</h3>
+          <form id="changePasswordForm">
+            <div class="password-row">
+              <input id="currentPassword" type="password" autocomplete="current-password" placeholder="Password attuale" />
+              <button id="toggleCurrentPassword" type="button" class="secondary password-toggle" aria-label="Mostra password attuale">👁</button>
+            </div>
+            <div class="password-row">
+              <input id="newPassword" type="password" autocomplete="new-password" placeholder="Nuova password" />
+              <button id="toggleNewPassword" type="button" class="secondary password-toggle" aria-label="Mostra nuova password">👁</button>
+            </div>
+            <div class="password-row">
+              <input id="confirmNewPassword" type="password" autocomplete="new-password" placeholder="Conferma nuova password" />
+              <button id="toggleConfirmNewPassword" type="button" class="secondary password-toggle" aria-label="Mostra conferma password">👁</button>
+            </div>
+            <button type="submit">Aggiorna password</button>
+          </form>
+          <div id="changePasswordResult" class="invite-box hidden"></div>
+        </div>
+
+        <div class="card">
           <h3>Nuovo utente</h3>
           <form id="createUserForm">
             <input id="newUsername" placeholder="Username" />

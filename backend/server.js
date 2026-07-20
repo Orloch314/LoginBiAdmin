@@ -58,7 +58,7 @@ function bootstrapData() {
       email: cleanString(process.env.BOOTSTRAP_ADMIN_EMAIL ?? ""),
       role: "admin",
       active: true,
-      reportIds: state.reports.map((report) => report.id),
+      reportIds: [],
       mustSetPassword: false,
       createdAt: now,
       updatedAt: now,
@@ -70,9 +70,7 @@ function bootstrapData() {
     existingAdmin.mustSetPassword = false;
     existingAdmin.passwordHash = existingAdmin.passwordHash || hashPassword(bootstrapPassword);
     existingAdmin.email = existingAdmin.email ?? "";
-    existingAdmin.reportIds = Array.isArray(existingAdmin.reportIds) && existingAdmin.reportIds.length
-      ? existingAdmin.reportIds
-      : state.reports.map((report) => report.id);
+    existingAdmin.reportIds = [];
     existingAdmin.updatedAt = now;
   }
 
@@ -344,7 +342,7 @@ function registerLogin(state, user, sessionToken) {
 }
 
 function buildSessionPayload(state, user, sessionToken) {
-  const reports = resolveReports(state, user.reportIds);
+  const reports = user.role === "admin" ? [] : resolveReports(state, user.reportIds);
   const stats = getUserStats(user.username, state.accessLog);
 
   return {
@@ -395,7 +393,7 @@ function ensureValidUserPayload(state, payload, allowRole = true) {
     username,
     normalizedUsername,
     role: allowRole ? cleanString(payload.role ?? "user").toLowerCase() : "user",
-    reportIds,
+    reportIds: allowRole && cleanString(payload.role ?? "user").toLowerCase() === "admin" ? [] : reportIds,
     email: emailValidation?.email ?? normalizeEmail(payload.email)
   };
 }
@@ -410,7 +408,7 @@ function publicUserList(state) {
         active: user.active !== false,
         mustSetPassword: Boolean(user.mustSetPassword),
         email: cleanString(user.email ?? ""),
-        reportIds: Array.isArray(user.reportIds) ? user.reportIds : [],
+        reportIds: user.role === "admin" ? [] : Array.isArray(user.reportIds) ? user.reportIds : [],
         lastLoginAt: stats.lastLoginAt,
         logins7d: stats.logins7d,
         logins30d: stats.logins30d
@@ -565,6 +563,40 @@ app.post("/api/auth/logout", requireSession, (req, res) => {
   res.json({ message: "Logout eseguito" });
 });
 
+app.put("/api/me/password", requireSession, (req, res) => {
+  const state = loadFreshState();
+  cleanExpiredState(state);
+
+  const user = findUser(state, req.auth.user.username);
+  if (!user) {
+    return res.status(404).json({ error: "Utente non trovato" });
+  }
+
+  const currentPassword = String(req.body.currentPassword ?? "");
+  const newPassword = String(req.body.newPassword ?? "");
+  const confirmPassword = String(req.body.confirmPassword ?? "");
+
+  if (!user.passwordHash || !verifyPassword(currentPassword, user.passwordHash)) {
+    return res.status(400).json({ error: "Password attuale non corretta" });
+  }
+
+  if (!newPassword || newPassword.length < 8) {
+    return res.status(400).json({ error: "La nuova password deve avere almeno 8 caratteri" });
+  }
+
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ error: "Le password non coincidono" });
+  }
+
+  user.passwordHash = hashPassword(newPassword);
+  user.mustSetPassword = false;
+  user.updatedAt = nowIso();
+  logAudit(state, user.username, "change-password", user.username);
+  saveFreshState(state);
+
+  res.json({ message: "Password aggiornata" });
+});
+
 app.get("/api/me", requireSession, (req, res) => {
   const state = loadFreshState();
   const user = findUser(state, req.auth.user.username);
@@ -584,7 +616,7 @@ app.get("/api/me", requireSession, (req, res) => {
       logins7d: stats.logins7d,
       logins30d: stats.logins30d
     },
-    reports: resolveReports(state, user.reportIds),
+    reports: user.role === "admin" ? [] : resolveReports(state, user.reportIds),
     allReports: state.reports.filter((report) => report.active !== false),
     isAdmin: user.role === "admin"
   });
@@ -730,7 +762,7 @@ app.put("/api/admin/users/:username", requireSession, requireAdmin, async (req, 
   }
 
   user.role = role;
-  user.reportIds = reportIds;
+  user.reportIds = role === "admin" ? [] : reportIds;
   user.updatedAt = nowIso();
 
   if (req.body.resetInvite === true) {
@@ -803,6 +835,10 @@ app.delete("/api/admin/users/:username", requireSession, requireAdmin, (req, res
   cleanExpiredState(state);
 
   const normalizedUsername = normalizeUsername(req.params.username);
+  if (normalizedUsername === normalizeUsername(req.auth.user.username)) {
+    return res.status(400).json({ error: "Non puoi eliminare il tuo account. Puoi solo cambiare la password." });
+  }
+
   const index = state.users.findIndex((user) => normalizeUsername(user.username) === normalizedUsername);
   if (index === -1) {
     return res.status(404).json({ error: "Utente non trovato" });
