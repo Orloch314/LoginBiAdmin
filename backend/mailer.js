@@ -8,12 +8,32 @@ function base64(value) {
   return Buffer.from(String(value), "utf8").toString("base64");
 }
 
+function mimeHeader(value) {
+  return `=?UTF-8?B?${base64(value)}?=`;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function textToHtml(value) {
+  return escapeHtml(value)
+    .split(/\r?\n/)
+    .map((line) => (line ? line : "&nbsp;"))
+    .join("<br />");
+}
+
 function buildMimeMessage({ fromName, fromEmail, toEmail, subject, textBody, htmlBody }) {
   const boundary = `boundary_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   return [
-    `From: ${fromName} <${fromEmail}>`,
+    `From: ${mimeHeader(fromName)} <${fromEmail}>`,
     `To: <${toEmail}>`,
-    `Subject: ${subject}`,
+    `Subject: ${mimeHeader(subject)}`,
     "MIME-Version: 1.0",
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
     "",
@@ -52,7 +72,7 @@ class SmtpSession {
       }
     });
     socket.on("close", () => {
-      const error = new Error("La connessione SMTP si è chiusa");
+      const error = new Error("La connessione SMTP si e chiusa");
       while (this.pending.length) {
         this.pending.shift().reject(error);
       }
@@ -131,7 +151,10 @@ export async function sendInviteEmail({
   fromEmail,
   toEmail,
   username,
-  inviteLink
+  inviteToken,
+  inviteLink,
+  subject,
+  body
 }) {
   const socket = tls.connect({
     host: smtpHost,
@@ -156,29 +179,18 @@ export async function sendInviteEmail({
     expectCode(await session.command(`RCPT TO:<${toEmail}>`), [250, 251], "RCPT TO");
     expectCode(await session.command("DATA"), 354, "DATA");
 
-    const subject = "Portal BI";
-    const textBody = `
-Buenas
-
-Hemos habilitado el portal para la visualización de los reportes BI
-
-Portal: ${inviteLink}
+    const textBody = `${body}
 
 Usuario: ${username}
-
-Al primer ingreso pide cambiar, y automáticamente va a ver su/s reporte/s.
-
-Saludos
-    `;
+Token: ${inviteToken}
+Link invito: ${inviteLink}`;
     const htmlBody = `
 <html>
   <body style="font-family: Arial, sans-serif; color: #222;">
-    <p>Buenas</p>
-    <p>Hemos habilitado el portal para la visualización de los reportes BI</p>
-    <p>Portal: <a href="${inviteLink}">${inviteLink}</a></p>
-    <p>Usuario: <strong>${username}</strong></p>
-    <p>Al primer ingreso pide cambiar, y automáticamente va a ver su/s reporte/s.</p>
-    <p>Saludos</p>
+    <p>${textToHtml(body)}</p>
+    <p><strong>Usuario:</strong> ${escapeHtml(username)}</p>
+    <p><strong>Token:</strong> ${escapeHtml(inviteToken)}</p>
+    <p><strong>Link invito:</strong> <a href="${escapeHtml(inviteLink)}">${escapeHtml(inviteLink)}</a></p>
   </body>
 </html>
     `;

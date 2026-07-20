@@ -228,6 +228,8 @@ function renderSmtpSettings(settings = {}) {
   document.getElementById("smtpFromEmail").value = settings.fromEmail || "";
   document.getElementById("smtpPortalUrl").value = settings.portalUrl || "";
   document.getElementById("smtpPortalPath").value = settings.portalPath || "/admin.html";
+  document.getElementById("emailSubject").value = settings.emailSubject || "";
+  document.getElementById("emailBody").value = settings.emailBody || "";
   document.getElementById("smtpClearPassword").checked = false;
   smtpPasswordStatus.innerText = settings.hasPassword
     ? "Password SMTP configurata."
@@ -465,6 +467,8 @@ smtpSettingsForm.addEventListener("submit", async (event) => {
         fromEmail: document.getElementById("smtpFromEmail").value,
         portalUrl: document.getElementById("smtpPortalUrl").value,
         portalPath: document.getElementById("smtpPortalPath").value,
+        emailSubject: document.getElementById("emailSubject").value,
+        emailBody: document.getElementById("emailBody").value,
         clearPassword: document.getElementById("smtpClearPassword").checked
       })
     });

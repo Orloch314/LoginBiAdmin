@@ -51,5 +51,9 @@ Campos principales:
 - `Email mittente`
 - `URL portale`
 - `Pagina invito`
+- `Oggetto email`
+- `Testo email base`
 
-La password SMTP viene salvata nel file locale `backend/data/smtp-settings.json`, escluso da Git. Dopo il salvataggio il pannello mostra solo se la password e configurata.
+La password SMTP e il testo della mail vengono salvati nel file locale `backend/data/smtp-settings.json`, escluso da Git. Dopo il salvataggio il pannello mostra solo se la password e configurata.
+
+Quando viene inviato un invito, il sistema aggiunge automaticamente al testo configurato username, token e link di invito.

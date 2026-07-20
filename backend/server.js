@@ -155,7 +155,9 @@ function normalizeSmtpSettings(settings = {}) {
     fromName: cleanString(settings.fromName),
     fromEmail: normalizeEmail(settings.fromEmail),
     portalUrl: cleanString(settings.portalUrl),
-    portalPath: cleanString(settings.portalPath || defaultInvitePortalPath)
+    portalPath: cleanString(settings.portalPath || defaultInvitePortalPath),
+    emailSubject: cleanString(settings.emailSubject),
+    emailBody: String(settings.emailBody ?? "")
   };
 }
 
@@ -169,6 +171,8 @@ function publicSmtpSettings(settings = {}) {
     fromEmail: normalized.fromEmail,
     portalUrl: normalized.portalUrl,
     portalPath: normalized.portalPath,
+    emailSubject: normalized.emailSubject,
+    emailBody: normalized.emailBody,
     hasPassword: Boolean(normalized.password)
   };
 }
@@ -183,7 +187,9 @@ function validateSmtpSettings(payload, currentSettings = {}) {
     fromName: cleanString(payload.fromName),
     fromEmail: normalizeEmail(payload.fromEmail),
     portalUrl: cleanString(payload.portalUrl),
-    portalPath: cleanString(payload.portalPath || defaultInvitePortalPath)
+    portalPath: cleanString(payload.portalPath || defaultInvitePortalPath),
+    emailSubject: cleanString(payload.emailSubject),
+    emailBody: String(payload.emailBody ?? "").trim()
   };
 
   if (payload.password) {
@@ -216,6 +222,14 @@ function validateSmtpSettings(payload, currentSettings = {}) {
 
   if (!next.portalUrl) {
     return { error: "URL portale obbligatorio" };
+  }
+
+  if (!next.emailSubject) {
+    return { error: "Oggetto email obbligatorio" };
+  }
+
+  if (!next.emailBody) {
+    return { error: "Testo email obbligatorio" };
   }
 
   try {
@@ -462,6 +476,9 @@ async function sendInviteForUser(state, user, token) {
       fromEmail: smtpSettings.fromEmail,
       toEmail: user.email,
       username: user.username,
+      inviteToken: token,
+      subject: smtpSettings.emailSubject,
+      body: smtpSettings.emailBody,
       inviteLink: buildInviteLink(state, token)
     });
     return { sent: true };
@@ -662,6 +679,8 @@ app.put("/api/admin/smtp-settings", requireSession, requireAdmin, (req, res) => 
     fromEmail: state.smtpSettings.fromEmail,
     portalUrl: state.smtpSettings.portalUrl,
     portalPath: state.smtpSettings.portalPath,
+    emailSubject: state.smtpSettings.emailSubject,
+    hasEmailBody: Boolean(state.smtpSettings.emailBody),
     hasPassword: Boolean(state.smtpSettings.password)
   });
   saveFreshState(state);
