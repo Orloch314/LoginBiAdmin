@@ -94,6 +94,46 @@ backend/data/access-log.json
 backend/data/audit-log.json
 ```
 
+### Directorio persistente recomendado
+
+En Passenger se recomienda guardar los datos fuera de la carpeta actualizada mediante Git:
+
+```bash
+mkdir -p /home/cidesaco/loginbi-data
+export DATA_DIR="/home/cidesaco/loginbi-data"
+```
+
+Configurar tambien `DATA_DIR` con ese mismo valor en las variables de entorno de la aplicacion Node.js del hosting. El usuario que ejecuta Node.js debe tener permisos de lectura y escritura sobre la carpeta.
+
+Si la migracion todavia no fue ejecutada, mantener `DATA_DIR` definido al ejecutar el comando:
+
+```bash
+DATA_DIR="/home/cidesaco/loginbi-data" \
+LEGACY_USERS_FILE="/ruta/loginbi_backup_antes_v2/backend/users.json" \
+LEGACY_REPORTS_FILE="/ruta/loginbi_backup_antes_v2/backend/reports.json" \
+npm run migrate:legacy
+```
+
+Si los datos ya fueron migrados dentro del proyecto, detener primero la aplicacion y copiarlos:
+
+```bash
+cp -a backend/data/. /home/cidesaco/loginbi-data/
+```
+
+No volver a ejecutar la migracion despues de esta copia. Al reiniciar, el portal utilizara los datos indicados por `DATA_DIR`.
+
+### Enviar los tokens de usuarios migrados
+
+La migracion puede crear invitaciones para usuarios que todavia no tienen email. Para enviar cada token:
+
+1. Entrar al panel como administrador.
+2. Seleccionar el usuario migrado.
+3. Agregar su email y guardar el perfil.
+4. Ir a `Inviti pendenti`.
+5. Presionar `Invia token per email` al lado del token correspondiente.
+
+El portal envia el token ya existente y no genera uno nuevo. El envio es exclusivamente individual; no existe una accion masiva, para reducir el riesgo de bloqueo por spam.
+
 ## 5. Verificar el administrador
 
 La nueva version crea o restaura el usuario administrador al iniciar el servidor.
@@ -173,6 +213,14 @@ http://localhost:3000
 
 En produccion, el hosting debe redirigir el dominio publico al proceso Node.js del portal.
 
+El servidor utiliza automaticamente la variable `PORT` asignada por el hosting. Para limitar las conexiones SMTP bloqueadas se puede configurar:
+
+```text
+SMTP_TIMEOUT_MS=15000
+```
+
+El valor representa milisegundos. Las operaciones sobre usuarios, reportes y sesiones utilizan un lock compartido y escrituras atomicas; cada archivo anterior se conserva tambien como copia `.bak`.
+
 URL esperado:
 
 ```text
@@ -193,6 +241,8 @@ https://reportes.cidesa.com.py/login.html
 - El objeto y texto de la mail estan configurados.
 - El envio de token por mail funciona.
 - Un usuario normal entra y ve solamente sus reportes.
+- `DATA_DIR` apunta a la carpeta persistente correcta.
+- El usuario de Node.js puede escribir dentro de `DATA_DIR`.
 
 ## 10. Rollback
 
@@ -202,4 +252,3 @@ Si aparece un problema durante la instalacion:
 2. Restaurar la carpeta anterior desde `loginbi_backup_antes_v2`.
 3. Reiniciar la aplicacion anterior.
 4. Revisar el error antes de intentar nuevamente la migracion.
-

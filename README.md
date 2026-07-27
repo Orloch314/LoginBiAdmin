@@ -1,59 +1,105 @@
 # LoginBI v2
 
-Versione migliorata del portale interno per la visualizzazione di report Power BI.
+Versión mejorada del portal interno para visualizar reportes de Power BI.
 
-## Funzioni
+## Funcionalidades
 
-- login con sessione verificata dal backend
-- invito utente con token monouso
-- primo accesso con password scelta dall'utente
-- dashboard con report assegnati
-- area admin con utenti, report, assegnazioni e KPI di accesso
-- audit e log di accesso
-- invio automatico degli inviti via SMTP
+- inicio de sesión con sesiones verificadas por el backend;
+- invitación de usuarios mediante tokens de un solo uso;
+- primer acceso con contraseña definida por el usuario;
+- panel con los reportes asignados;
+- área administrativa para gestionar usuarios, reportes, asignaciones e indicadores de acceso;
+- registro de auditoría y accesos;
+- envío automático de invitaciones por SMTP;
+- envío manual individual de tokens pendientes;
+- configuración desde el panel administrativo del servidor SMTP, asunto y texto del correo.
 
-## Avvio
+## Ejecución local
+
+Requisitos:
+
+- Node.js 18 o superior;
+- npm.
+
+Instalar las dependencias e iniciar el portal:
 
 ```bash
 npm install
 npm start
 ```
 
-Apri poi `http://localhost:3000/login.html`.
+Abrir `http://localhost:3000/login.html`.
 
-## Migrazione da versione legacy
+## Producción
 
-Se hai i vecchi file `users.json` e `reports.json`, puoi convertirli nel nuovo formato con:
+El portal utiliza escrituras atómicas y un bloqueo compartido para evitar pérdidas de usuarios o sesiones cuando Passenger inicia varios procesos.
+
+Variables de entorno disponibles:
+
+- `PORT`: puerto asignado por el hosting; el valor local predeterminado es `3000`.
+- `DATA_DIR`: directorio persistente de los archivos JSON; si se omite, se utiliza `backend/data`.
+- `SMTP_TIMEOUT_MS`: tiempo máximo de inactividad SMTP en milisegundos; el valor predeterminado es `15000`.
+- `STORAGE_LOCK_TIMEOUT_MS`: tiempo máximo de espera del bloqueo en milisegundos; el valor predeterminado es `10000`.
+- `STORAGE_STALE_LOCK_MS`: tiempo tras el cual se elimina un bloqueo abandonado, en milisegundos; el valor predeterminado es `30000`.
+
+En el hosting se recomienda configurar `DATA_DIR` fuera de la carpeta actualizada mediante Git y comprobar que el usuario del proceso Node.js tenga permisos de lectura y escritura. Cada modificación también crea una copia `.bak` del archivo JSON válido anterior.
+
+## Migración desde la versión anterior
+
+Si están disponibles los archivos anteriores `users.json` y `reports.json`, se pueden convertir al nuevo formato con:
 
 ```bash
 npm run migrate:legacy
 ```
 
-Per usare sorgenti diversi:
+Para indicar archivos de origen diferentes:
 
 ```bash
-LEGACY_USERS_FILE="C:/path/users.json" LEGACY_REPORTS_FILE="C:/path/reports.json" npm run migrate:legacy
+LEGACY_USERS_FILE="C:/ruta/users.json" LEGACY_REPORTS_FILE="C:/ruta/reports.json" npm run migrate:legacy
 ```
 
-La migrazione importa utenti e report, converte le password in hash e crea inviti monouso per il primo accesso.
+La migración:
 
-## Correo SMTP
+- importa usuarios y reportes;
+- excluye la cuenta administrativa anterior;
+- convierte las contraseñas en hashes;
+- crea tokens de un solo uso para el primer acceso;
+- conserva las asignaciones existentes entre usuarios y reportes.
 
-El envio automatico de invitaciones usa SMTP sobre TLS. Los parametros se configuran desde el panel administrador, en la seccion `Configurazione SMTP`.
+La guía completa de instalación, migración, validación y reversión está disponible en `INSTALACION_Y_MIGRACION.md`.
+
+## Configuración SMTP
+
+El envío de invitaciones utiliza SMTP sobre TLS. Los parámetros se configuran desde el panel administrativo, en la sección `Email e inviti`.
 
 Campos principales:
 
-- `Host SMTP`
-- `Porta SMTP`
-- `Utente SMTP`
-- `Password SMTP`
-- `Nome mittente`
-- `Email mittente`
-- `URL portale`
-- `Pagina invito`
-- `Oggetto email`
-- `Testo email base`
+- `Host SMTP`;
+- `Porta SMTP`;
+- `Utente SMTP`;
+- `Password SMTP`;
+- `Nome mittente`;
+- `Email mittente`;
+- `URL portale`;
+- `Pagina invito`;
+- `Oggetto email`;
+- `Testo email base`.
 
-La password SMTP e il testo della mail vengono salvati nel file locale `backend/data/smtp-settings.json`, escluso da Git. Dopo il salvataggio il pannello mostra solo se la password e configurata.
+La contraseña SMTP, el asunto y el texto del correo se guardan en `smtp-settings.json` dentro de `DATA_DIR`, o en `backend/data/smtp-settings.json` cuando la variable no está configurada. El archivo predeterminado está excluido de Git. Después de guardar, el panel solamente indica si existe una contraseña configurada.
 
-Quando viene inviato un invito, il sistema aggiunge automaticamente al testo configurato username, token e link di invito.
+Al enviar una invitación, el sistema agrega automáticamente al texto configurado:
+
+- el nombre de usuario;
+- el token;
+- el enlace de invitación.
+
+## Tokens de usuarios migrados
+
+Para los usuarios migrados sin dirección de correo:
+
+1. seleccionar el usuario en el panel de asignaciones;
+2. agregar y guardar su dirección de correo;
+3. abrir la sección `Inviti pendenti`;
+4. pulsar `Invia token per email` junto al token del usuario.
+
+La operación envía el token existente sin regenerarlo. No existe un envío masivo: cada correo se envía manualmente para reducir el riesgo de bloqueos por spam.

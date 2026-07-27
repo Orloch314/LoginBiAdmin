@@ -3,40 +3,74 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login - Power BI Portal</title>
+  <title>Accesso - Portal BI Cidesa</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-  <div class="centered">
-    <div class="card login-box">
-      <h2>Accesso Riservato</h2>
-      <p id="subtitle" class="muted">Accedi con username e password oppure completa l'invito.</p>
-
-      <div id="message" class="error"></div>
-
-      <form id="loginForm">
-        <input id="username" autocomplete="username" placeholder="Utente" />
-        <div class="password-row">
-          <input id="password" type="password" autocomplete="current-password" placeholder="Password" />
-          <button id="togglePassword" type="button" class="secondary password-toggle" aria-label="Mostra password">👁</button>
+<body class="auth-body">
+  <main class="auth-shell">
+    <section class="auth-visual">
+      <div class="auth-brand">
+        <div class="brand-mark brand-mark-large">BI</div>
+        <div>
+          <strong>Portal BI</strong>
+          <span>Cidesa Analytics</span>
         </div>
-        <button type="submit">Entra</button>
-      </form>
+      </div>
+      <div class="auth-copy">
+        <span class="eyebrow eyebrow-light">Business intelligence</span>
+        <h1>I dati giusti,<br />nel momento giusto.</h1>
+        <p>Accedi in sicurezza ai report Power BI assegnati al tuo profilo.</p>
+      </div>
+      <div class="auth-features">
+        <div><span>✓</span> Accesso protetto</div>
+        <div><span>✓</span> Report personalizzati</div>
+        <div><span>✓</span> Portale centralizzato</div>
+      </div>
+    </section>
 
-      <form id="inviteForm" class="hidden">
-        <input id="inviteToken" placeholder="Token invito" />
-        <div class="password-row">
-          <input id="invitePassword" type="password" autocomplete="new-password" placeholder="Nuova password" />
-          <button id="toggleInvitePassword" type="button" class="secondary password-toggle" aria-label="Mostra nuova password">👁</button>
+    <section class="auth-card-wrap">
+      <div class="auth-card">
+        <div class="auth-card-heading">
+          <span class="eyebrow">Accesso riservato</span>
+          <h2>Benvenuto</h2>
+          <p id="subtitle">Inserisci le credenziali del tuo account per continuare.</p>
         </div>
-        <div class="password-row">
-          <input id="invitePasswordConfirm" type="password" autocomplete="new-password" placeholder="Conferma password" />
-          <button id="toggleInvitePasswordConfirm" type="button" class="secondary password-toggle" aria-label="Mostra conferma password">👁</button>
+
+        <div id="message" class="error"></div>
+
+        <form id="loginForm">
+          <label for="username">Utente</label>
+          <input id="username" autocomplete="username" placeholder="Inserisci username" />
+          <label for="password">Password</label>
+          <div class="password-row">
+            <input id="password" type="password" autocomplete="current-password" placeholder="Inserisci password" />
+            <button id="togglePassword" type="button" class="secondary password-toggle" aria-label="Mostra password">Mostra</button>
+          </div>
+          <button type="submit" class="auth-submit">Entra nel portale</button>
+        </form>
+
+        <form id="inviteForm" class="hidden">
+          <label for="inviteToken">Token invito</label>
+          <input id="inviteToken" placeholder="Token ricevuto per email" />
+          <label for="invitePassword">Nuova password</label>
+          <div class="password-row">
+            <input id="invitePassword" type="password" autocomplete="new-password" placeholder="Almeno 8 caratteri" />
+            <button id="toggleInvitePassword" type="button" class="secondary password-toggle" aria-label="Mostra nuova password">Mostra</button>
+          </div>
+          <label for="invitePasswordConfirm">Conferma password</label>
+          <div class="password-row">
+            <input id="invitePasswordConfirm" type="password" autocomplete="new-password" placeholder="Ripeti la password" />
+            <button id="toggleInvitePasswordConfirm" type="button" class="secondary password-toggle" aria-label="Mostra conferma password">Mostra</button>
+          </div>
+          <button type="submit" class="auth-submit">Attiva account</button>
+        </form>
+
+        <div class="auth-help">
+          <span>Accesso consentito esclusivamente agli utenti autorizzati.</span>
         </div>
-        <button type="submit">Attiva account</button>
-      </form>
-    </div>
-  </div>
+      </div>
+    </section>
+  </main>
 
   <script src="login.js"></script>
 </body>

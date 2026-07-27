@@ -31,6 +31,7 @@ function toggleFieldVisibility(inputId, buttonId) {
   const isHidden = input.type === "password";
   input.type = isHidden ? "text" : "password";
   button.setAttribute("aria-label", isHidden ? "Nascondi password" : "Mostra password");
+  button.innerText = isHidden ? "Nascondi" : "Mostra";
 }
 
 async function requestJson(url, options = {}) {

@@ -16,7 +16,7 @@ import {
   verifyPassword
 } from "./crypto.js";
 import { sendInviteEmail } from "./mailer.js";
-import { ensureStorage, loadState, saveState, publicDir } from "./storage.js";
+import { ensureStorage, loadState, publicDir, withStateTransaction } from "./storage.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,6 +25,7 @@ const sessionDurationHours = Number(process.env.SESSION_DURATION_HOURS ?? 8);
 const inviteDurationDays = Number(process.env.INVITE_DURATION_DAYS ?? 14);
 const bootstrapUsername = cleanString(process.env.BOOTSTRAP_ADMIN_USERNAME ?? "admin");
 const bootstrapPassword = cleanString(process.env.BOOTSTRAP_ADMIN_PASSWORD ?? "admin123!");
+const serverPort = Number(process.env.PORT ?? 3000);
 const defaultSmtpPort = 465;
 const defaultInvitePortalPath = "/admin.html";
 
@@ -33,74 +34,96 @@ app.use(express.json());
 app.use(express.static(publicDir));
 
 ensureStorage();
-bootstrapData();
+await bootstrapData();
 
-function bootstrapData() {
-  const state = loadState();
-  const now = nowIso();
+async function bootstrapData() {
+  await withStateTransaction((state) => {
+    const now = nowIso();
 
-  if (!state.reports.length) {
-    state.reports.push({
-      id: "sudameris",
-      title: "Report Sudameris",
-      url: "https://app.powerbi.com/view?r=eyJrIjoiNTBkOTk2MTUtYTI3Ni00OTkxLTg1ZmUtOGNlZmU4MzhjNzI1IiwidCI6ImU3MjVkMTUwLWFkZjEtNDExMy1hNTU2LTU2Y2E4MWEyOGY4NCJ9",
-      active: true,
-      createdAt: now,
-      updatedAt: now
-    });
-  }
+    if (!state.reports.length) {
+      state.reports.push({
+        id: "sudameris",
+        title: "Report Sudameris",
+        url: "https://app.powerbi.com/view?r=eyJrIjoiNTBkOTk2MTUtYTI3Ni00OTkxLTg1ZmUtOGNlZmU4MzhjNzI1IiwidCI6ImU3MjVkMTUwLWFkZjEtNDExMy1hNTU2LTU2Y2E4MWEyOGY4NCJ9",
+        active: true,
+        createdAt: now,
+        updatedAt: now
+      });
+    }
 
-  const existingAdmin = state.users.find((user) => normalizeUsername(user.username) === normalizeUsername(bootstrapUsername));
-  if (!existingAdmin) {
-    state.users.push({
-      username: bootstrapUsername,
-      passwordHash: hashPassword(bootstrapPassword),
-      email: cleanString(process.env.BOOTSTRAP_ADMIN_EMAIL ?? ""),
-      role: "admin",
-      active: true,
-      reportIds: [],
-      mustSetPassword: false,
-      createdAt: now,
-      updatedAt: now,
-      lastLoginAt: null
-    });
-  } else if (existingAdmin) {
-    existingAdmin.role = "admin";
-    existingAdmin.active = true;
-    existingAdmin.mustSetPassword = false;
-    existingAdmin.passwordHash = existingAdmin.passwordHash || hashPassword(bootstrapPassword);
-    existingAdmin.email = existingAdmin.email ?? "";
-    existingAdmin.reportIds = [];
-    existingAdmin.updatedAt = now;
-  }
+    const existingAdmin = state.users.find((user) => normalizeUsername(user.username) === normalizeUsername(bootstrapUsername));
+    if (!existingAdmin) {
+      state.users.push({
+        username: bootstrapUsername,
+        passwordHash: hashPassword(bootstrapPassword),
+        email: cleanString(process.env.BOOTSTRAP_ADMIN_EMAIL ?? ""),
+        role: "admin",
+        active: true,
+        reportIds: [],
+        mustSetPassword: false,
+        createdAt: now,
+        updatedAt: now,
+        lastLoginAt: null
+      });
+    } else {
+      const adminNeedsUpdate =
+        existingAdmin.role !== "admin" ||
+        existingAdmin.active !== true ||
+        existingAdmin.mustSetPassword !== false ||
+        !existingAdmin.passwordHash ||
+        existingAdmin.email === undefined ||
+        existingAdmin.reportIds?.length;
 
-  if (!state.invites) {
-    state.invites = [];
-  }
+      existingAdmin.role = "admin";
+      existingAdmin.active = true;
+      existingAdmin.mustSetPassword = false;
+      existingAdmin.passwordHash = existingAdmin.passwordHash || hashPassword(bootstrapPassword);
+      existingAdmin.email = existingAdmin.email ?? "";
+      existingAdmin.reportIds = [];
+      if (adminNeedsUpdate) {
+        existingAdmin.updatedAt = now;
+      }
+    }
 
-  if (!state.sessions) {
-    state.sessions = [];
-  }
+    if (!state.invites) {
+      state.invites = [];
+    }
 
-  if (!state.accessLog) {
-    state.accessLog = [];
-  }
+    if (!state.sessions) {
+      state.sessions = [];
+    }
 
-  if (!state.auditLog) {
-    state.auditLog = [];
-  }
+    if (!state.accessLog) {
+      state.accessLog = [];
+    }
 
-  state.smtpSettings = normalizeSmtpSettings(state.smtpSettings);
+    if (!state.auditLog) {
+      state.auditLog = [];
+    }
 
-  saveState(state);
+    state.smtpSettings = normalizeSmtpSettings(state.smtpSettings);
+  });
 }
 
 function loadFreshState() {
   return loadState();
 }
 
-function saveFreshState(state) {
-  saveState(state);
+class ApiError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}
+
+function asyncRoute(handler) {
+  return (req, res, next) => {
+    Promise.resolve(handler(req, res, next)).catch(next);
+  };
+}
+
+function fail(status, message) {
+  throw new ApiError(status, message);
 }
 
 function cleanExpiredState(state) {
@@ -131,6 +154,7 @@ function getUserStats(username, accessLog, now = new Date()) {
 
   return {
     lastLoginAt,
+    totalLogins: events.length,
     logins7d: events.filter((entry) => new Date(entry.at).getTime() >= last7Threshold).length,
     logins30d: events.filter((entry) => new Date(entry.at).getTime() >= last30Threshold).length
   };
@@ -301,11 +325,6 @@ function requireSession(req, res, next) {
 
   const session = state.sessions.find((entry) => entry.token === sessionToken && !entry.revokedAt);
   if (!session || isExpired(session.expiresAt)) {
-    if (session) {
-      session.revokedAt = nowIso();
-      saveFreshState(state);
-    }
-
     return res.status(401).json({ error: "Sessione scaduta" });
   }
 
@@ -367,6 +386,7 @@ function buildSessionPayload(state, user, sessionToken) {
       active: user.active,
       mustSetPassword: Boolean(user.mustSetPassword),
       lastLoginAt: stats.lastLoginAt,
+      totalLogins: stats.totalLogins,
       logins7d: stats.logins7d,
       logins30d: stats.logins30d
     },
@@ -424,11 +444,23 @@ function publicUserList(state) {
         email: cleanString(user.email ?? ""),
         reportIds: user.role === "admin" ? [] : Array.isArray(user.reportIds) ? user.reportIds : [],
         lastLoginAt: stats.lastLoginAt,
+        totalLogins: stats.totalLogins,
         logins7d: stats.logins7d,
         logins30d: stats.logins30d
       };
     })
     .sort((left, right) => left.username.localeCompare(right.username));
+}
+
+function publicEditableUser(user) {
+  return {
+    username: user.username,
+    email: user.email ?? "",
+    role: user.role,
+    active: user.active,
+    reportIds: user.reportIds,
+    mustSetPassword: user.mustSetPassword
+  };
 }
 
 function createInviteForUser(state, username, createdBy) {
@@ -483,10 +515,37 @@ async function sendInviteForUser(state, user, token) {
     });
     return { sent: true };
   } catch (error) {
-    logAudit(state, "system", "invite-email-failed", user.username, { error: String(error?.message ?? error) });
-    saveFreshState(state);
-    return { sent: false, error: String(error?.message ?? error) };
+    return {
+      sent: false,
+      error: String(error?.message ?? error),
+      auditFailure: true
+    };
   }
+}
+
+async function recordInviteEmailFailure(username, error) {
+  await withStateTransaction((state) => {
+    logAudit(state, "system", "invite-email-failed", username, { error });
+  });
+}
+
+async function recordInviteEmailSent(token, username, email, actor) {
+  await withStateTransaction((state) => {
+    const invite = state.invites.find((entry) => entry.token === token && !entry.usedAt);
+    if (invite) {
+      invite.lastSentAt = nowIso();
+      invite.sentCount = Number(invite.sentCount ?? 0) + 1;
+    }
+    logAudit(state, actor, "invite-email-sent", username, { token, email });
+  });
+}
+
+async function sendInviteAndAudit(state, user, token) {
+  const emailStatus = await sendInviteForUser(state, user, token);
+  if (emailStatus.auditFailure) {
+    await recordInviteEmailFailure(user.username, emailStatus.error);
+  }
+  return emailStatus;
 }
 
 function consumeInvite(state, token) {
@@ -503,116 +562,140 @@ app.get("/", (req, res) => {
   res.redirect("/login.html");
 });
 
-app.post("/api/auth/login", (req, res) => {
-  const state = loadFreshState();
-  cleanExpiredState(state);
-
+app.post("/api/auth/login", asyncRoute(async (req, res) => {
   const username = cleanString(req.body.username);
   const password = String(req.body.password ?? "");
-  const user = findUser(state, username);
+  const authenticationState = loadFreshState();
+  const authenticatedUser = findUser(authenticationState, username);
 
-  if (!user || user.active === false || !user.passwordHash || !verifyPassword(password, user.passwordHash)) {
-    return res.status(401).json({ error: "Credenziali errate" });
+  if (
+    !authenticatedUser ||
+    authenticatedUser.active === false ||
+    !authenticatedUser.passwordHash ||
+    !verifyPassword(password, authenticatedUser.passwordHash)
+  ) {
+    fail(401, "Credenziali errate");
   }
 
-  const sessionToken = createSession(state, user.username);
-  registerLogin(state, user, sessionToken);
-  user.active = true;
-  user.mustSetPassword = false;
-  logAudit(state, user.username, "login", user.username);
-  saveFreshState(state);
+  const authenticatedPasswordHash = authenticatedUser.passwordHash;
+  const payload = await withStateTransaction((state) => {
+    cleanExpiredState(state);
 
-  res.json(buildSessionPayload(state, user, sessionToken));
-});
+    const user = findUser(state, username);
+    if (!user || user.active === false || user.passwordHash !== authenticatedPasswordHash) {
+      fail(401, "Credenziali errate");
+    }
 
-app.post("/api/auth/accept-invite", (req, res) => {
-  const state = loadFreshState();
-  cleanExpiredState(state);
+    const sessionToken = createSession(state, user.username);
+    registerLogin(state, user, sessionToken);
+    user.active = true;
+    user.mustSetPassword = false;
+    logAudit(state, user.username, "login", user.username);
+    return buildSessionPayload(state, user, sessionToken);
+  });
 
+  res.json(payload);
+}));
+
+app.post("/api/auth/accept-invite", asyncRoute(async (req, res) => {
   const token = cleanString(req.body.token);
   const password = String(req.body.password ?? "");
   const confirmPassword = String(req.body.confirmPassword ?? "");
 
   if (!token) {
-    return res.status(400).json({ error: "Token obbligatorio" });
+    fail(400, "Token obbligatorio");
   }
 
   if (!password || password.length < 8) {
-    return res.status(400).json({ error: "La password deve avere almeno 8 caratteri" });
+    fail(400, "La password deve avere almeno 8 caratteri");
   }
 
   if (password !== confirmPassword) {
-    return res.status(400).json({ error: "Le password non coincidono" });
+    fail(400, "Le password non coincidono");
   }
 
-  const invite = consumeInvite(state, token);
-  if (!invite) {
-    return res.status(400).json({ error: "Token non valido o scaduto" });
-  }
+  const passwordHash = hashPassword(password);
+  const payload = await withStateTransaction((state) => {
+    cleanExpiredState(state);
 
-  const user = findUser(state, invite.username);
-  if (!user) {
-    return res.status(404).json({ error: "Utente non trovato" });
-  }
+    const invite = consumeInvite(state, token);
+    if (!invite) {
+      fail(400, "Token non valido o scaduto");
+    }
 
-  user.passwordHash = hashPassword(password);
-  user.mustSetPassword = false;
-  user.active = true;
-  user.updatedAt = nowIso();
+    const user = findUser(state, invite.username);
+    if (!user) {
+      fail(404, "Utente non trovato");
+    }
 
-  const sessionToken = createSession(state, user.username);
-  registerLogin(state, user, sessionToken);
-  logAudit(state, user.username, "accept-invite", user.username, { inviteToken: token });
-  saveFreshState(state);
+    user.passwordHash = passwordHash;
+    user.mustSetPassword = false;
+    user.active = true;
+    user.updatedAt = nowIso();
 
-  res.json(buildSessionPayload(state, user, sessionToken));
-});
+    const sessionToken = createSession(state, user.username);
+    registerLogin(state, user, sessionToken);
+    logAudit(state, user.username, "accept-invite", user.username, { inviteToken: token });
+    return buildSessionPayload(state, user, sessionToken);
+  });
 
-app.post("/api/auth/logout", requireSession, (req, res) => {
-  const state = loadFreshState();
-  const session = state.sessions.find((entry) => entry.token === req.auth.sessionToken);
-  if (session) {
-    session.revokedAt = nowIso();
-  }
+  res.json(payload);
+}));
 
-  logAudit(state, req.auth.user.username, "logout", req.auth.user.username);
-  saveFreshState(state);
+app.post("/api/auth/logout", requireSession, asyncRoute(async (req, res) => {
+  await withStateTransaction((state) => {
+    const session = state.sessions.find((entry) => entry.token === req.auth.sessionToken);
+    if (session) {
+      session.revokedAt = nowIso();
+    }
+
+    logAudit(state, req.auth.user.username, "logout", req.auth.user.username);
+  });
+
   res.json({ message: "Logout eseguito" });
-});
+}));
 
-app.put("/api/me/password", requireSession, (req, res) => {
-  const state = loadFreshState();
-  cleanExpiredState(state);
-
-  const user = findUser(state, req.auth.user.username);
-  if (!user) {
-    return res.status(404).json({ error: "Utente non trovato" });
-  }
-
+app.put("/api/me/password", requireSession, asyncRoute(async (req, res) => {
   const currentPassword = String(req.body.currentPassword ?? "");
   const newPassword = String(req.body.newPassword ?? "");
   const confirmPassword = String(req.body.confirmPassword ?? "");
 
-  if (!user.passwordHash || !verifyPassword(currentPassword, user.passwordHash)) {
-    return res.status(400).json({ error: "Password attuale non corretta" });
+  const passwordState = loadFreshState();
+  const currentUser = findUser(passwordState, req.auth.user.username);
+  if (!currentUser || !currentUser.passwordHash || !verifyPassword(currentPassword, currentUser.passwordHash)) {
+    fail(400, "Password attuale non corretta");
   }
 
   if (!newPassword || newPassword.length < 8) {
-    return res.status(400).json({ error: "La nuova password deve avere almeno 8 caratteri" });
+    fail(400, "La nuova password deve avere almeno 8 caratteri");
   }
 
   if (newPassword !== confirmPassword) {
-    return res.status(400).json({ error: "Le password non coincidono" });
+    fail(400, "Le password non coincidono");
   }
 
-  user.passwordHash = hashPassword(newPassword);
-  user.mustSetPassword = false;
-  user.updatedAt = nowIso();
-  logAudit(state, user.username, "change-password", user.username);
-  saveFreshState(state);
+  const currentPasswordHash = currentUser.passwordHash;
+  const newPasswordHash = hashPassword(newPassword);
+  await withStateTransaction((state) => {
+    cleanExpiredState(state);
+
+    const user = findUser(state, req.auth.user.username);
+    if (!user) {
+      fail(404, "Utente non trovato");
+    }
+
+    if (user.passwordHash !== currentPasswordHash) {
+      fail(400, "Password attuale non corretta");
+    }
+
+    user.passwordHash = newPasswordHash;
+    user.mustSetPassword = false;
+    user.updatedAt = nowIso();
+    logAudit(state, user.username, "change-password", user.username);
+  });
 
   res.json({ message: "Password aggiornata" });
-});
+}));
 
 app.get("/api/me", requireSession, (req, res) => {
   const state = loadFreshState();
@@ -630,6 +713,7 @@ app.get("/api/me", requireSession, (req, res) => {
       active: user.active !== false,
       mustSetPassword: Boolean(user.mustSetPassword),
       lastLoginAt: stats.lastLoginAt,
+      totalLogins: stats.totalLogins,
       logins7d: stats.logins7d,
       logins30d: stats.logins30d
     },
@@ -644,13 +728,19 @@ app.get("/api/admin/state", requireSession, requireAdmin, (req, res) => {
   cleanExpiredState(state);
   const pendingInvites = state.invites
     .filter((invite) => !invite.usedAt)
-    .map((invite) => ({
-      token: invite.token,
-      username: invite.username,
-      createdAt: invite.createdAt,
-      expiresAt: invite.expiresAt,
-      createdBy: invite.createdBy
-    }))
+    .map((invite) => {
+      const user = findUser(state, invite.username);
+      return {
+        token: invite.token,
+        username: invite.username,
+        email: user?.email ?? "",
+        createdAt: invite.createdAt,
+        expiresAt: invite.expiresAt,
+        createdBy: invite.createdBy,
+        lastSentAt: invite.lastSentAt ?? null,
+        sentCount: Number(invite.sentCount ?? 0)
+      };
+    })
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
 
   res.json({
@@ -661,311 +751,348 @@ app.get("/api/admin/state", requireSession, requireAdmin, (req, res) => {
   });
 });
 
-app.put("/api/admin/smtp-settings", requireSession, requireAdmin, (req, res) => {
-  const state = loadFreshState();
-  cleanExpiredState(state);
+app.put("/api/admin/smtp-settings", requireSession, requireAdmin, asyncRoute(async (req, res) => {
+  const smtpSettings = await withStateTransaction((state) => {
+    cleanExpiredState(state);
 
-  const validation = validateSmtpSettings(req.body, state.smtpSettings);
-  if (validation.error) {
-    return res.status(400).json({ error: validation.error });
-  }
-
-  state.smtpSettings = validation.settings;
-  logAudit(state, req.auth.user.username, "update-smtp-settings", "smtp-settings", {
-    host: state.smtpSettings.host,
-    port: state.smtpSettings.port,
-    user: state.smtpSettings.user,
-    fromName: state.smtpSettings.fromName,
-    fromEmail: state.smtpSettings.fromEmail,
-    portalUrl: state.smtpSettings.portalUrl,
-    portalPath: state.smtpSettings.portalPath,
-    emailSubject: state.smtpSettings.emailSubject,
-    hasEmailBody: Boolean(state.smtpSettings.emailBody),
-    hasPassword: Boolean(state.smtpSettings.password)
-  });
-  saveFreshState(state);
-
-  res.json({ smtpSettings: publicSmtpSettings(state.smtpSettings) });
-});
-
-app.post("/api/admin/users", requireSession, requireAdmin, async (req, res) => {
-  const state = loadFreshState();
-  cleanExpiredState(state);
-
-  const validation = ensureValidUserPayload(state, req.body, true);
-  if (validation.error) {
-    return res.status(400).json({ error: validation.error });
-  }
-
-  if (!validation.email) {
-    return res.status(400).json({ error: "Email obbligatoria" });
-  }
-
-  if (state.users.some((user) => normalizeUsername(user.username) === validation.normalizedUsername)) {
-    return res.status(400).json({ error: "Utente gia esistente" });
-  }
-
-  const now = nowIso();
-  const user = {
-    username: validation.username,
-    passwordHash: null,
-    email: validation.email,
-    role: validation.role,
-    active: false,
-    reportIds: validation.reportIds,
-    mustSetPassword: true,
-    createdAt: now,
-    updatedAt: now,
-    lastLoginAt: null
-  };
-
-  state.users.push(user);
-  const inviteToken = createInviteForUser(state, user.username, req.auth.user.username);
-  const inviteLink = buildInviteLink(state, inviteToken);
-  logAudit(state, req.auth.user.username, "create-user", user.username, {
-    role: user.role,
-    reportIds: user.reportIds
-  });
-  saveFreshState(state);
-  const emailStatus = await sendInviteForUser(state, user, inviteToken);
-
-  res.status(201).json({
-    user: {
-      username: user.username,
-      email: user.email,
-      role: user.role,
-      active: user.active,
-      reportIds: user.reportIds,
-      mustSetPassword: user.mustSetPassword
-    },
-    inviteToken,
-    inviteLink,
-    emailSent: emailStatus.sent,
-    emailError: emailStatus.error ?? null
-  });
-});
-
-app.put("/api/admin/users/:username", requireSession, requireAdmin, async (req, res) => {
-  const state = loadFreshState();
-  cleanExpiredState(state);
-
-  const user = findUser(state, req.params.username);
-  if (!user) {
-    return res.status(404).json({ error: "Utente non trovato" });
-  }
-
-  const role = cleanString(req.body.role ?? user.role).toLowerCase();
-  if (!["admin", "user"].includes(role)) {
-    return res.status(400).json({ error: "Ruolo non valido" });
-  }
-
-  if (req.body.email !== undefined) {
-    const emailValidation = validateEmail(req.body.email);
-    if (emailValidation.error) {
-      return res.status(400).json({ error: emailValidation.error });
+    const validation = validateSmtpSettings(req.body, state.smtpSettings);
+    if (validation.error) {
+      fail(400, validation.error);
     }
-    user.email = emailValidation.email;
-  }
 
-  const reportIds = Array.isArray(req.body.reportIds)
-    ? [...new Set(req.body.reportIds.map((reportId) => normalizeReportId(reportId)).filter(Boolean))]
-    : user.reportIds;
+    state.smtpSettings = validation.settings;
+    logAudit(state, req.auth.user.username, "update-smtp-settings", "smtp-settings", {
+      host: state.smtpSettings.host,
+      port: state.smtpSettings.port,
+      user: state.smtpSettings.user,
+      fromName: state.smtpSettings.fromName,
+      fromEmail: state.smtpSettings.fromEmail,
+      portalUrl: state.smtpSettings.portalUrl,
+      portalPath: state.smtpSettings.portalPath,
+      emailSubject: state.smtpSettings.emailSubject,
+      hasEmailBody: Boolean(state.smtpSettings.emailBody),
+      hasPassword: Boolean(state.smtpSettings.password)
+    });
 
-  const invalidReportIds = reportIds.filter((reportId) => !findReport(state, reportId));
-  if (invalidReportIds.length) {
-    return res.status(400).json({ error: `Report non trovati: ${invalidReportIds.join(", ")}` });
-  }
+    return publicSmtpSettings(state.smtpSettings);
+  });
 
-  if (typeof req.body.active === "boolean") {
-    user.active = req.body.active;
-  }
+  res.json({ smtpSettings });
+}));
 
-  user.role = role;
-  user.reportIds = role === "admin" ? [] : reportIds;
-  user.updatedAt = nowIso();
+app.post("/api/admin/users", requireSession, requireAdmin, asyncRoute(async (req, res) => {
+  const result = await withStateTransaction((state) => {
+    cleanExpiredState(state);
 
-  if (req.body.resetInvite === true) {
+    const validation = ensureValidUserPayload(state, req.body, true);
+    if (validation.error) {
+      fail(400, validation.error);
+    }
+
+    if (!validation.email) {
+      fail(400, "Email obbligatoria");
+    }
+
+    if (state.users.some((user) => normalizeUsername(user.username) === validation.normalizedUsername)) {
+      fail(400, "Utente gia esistente");
+    }
+
+    const now = nowIso();
+    const user = {
+      username: validation.username,
+      passwordHash: null,
+      email: validation.email,
+      role: validation.role,
+      active: false,
+      reportIds: validation.reportIds,
+      mustSetPassword: true,
+      createdAt: now,
+      updatedAt: now,
+      lastLoginAt: null
+    };
+
+    state.users.push(user);
     const inviteToken = createInviteForUser(state, user.username, req.auth.user.username);
     const inviteLink = buildInviteLink(state, inviteToken);
-    logAudit(state, req.auth.user.username, "reset-invite", user.username);
-    saveFreshState(state);
-    const emailStatus = await sendInviteForUser(state, user, inviteToken);
-
-    return res.json({
-      user: {
-        username: user.username,
-        email: user.email ?? "",
-        role: user.role,
-        active: user.active,
-        reportIds: user.reportIds,
-        mustSetPassword: user.mustSetPassword
-      },
-      inviteToken,
-      inviteLink,
-      emailSent: emailStatus.sent,
-      emailError: emailStatus.error ?? null
-    });
-  }
-
-  logAudit(state, req.auth.user.username, "update-user", user.username, {
-    role: user.role,
-    active: user.active,
-    reportIds: user.reportIds
-  });
-  saveFreshState(state);
-
-  res.json({
-    user: {
-      username: user.username,
-      email: user.email ?? "",
+    logAudit(state, req.auth.user.username, "create-user", user.username, {
       role: user.role,
-      active: user.active,
-      reportIds: user.reportIds,
-      mustSetPassword: user.mustSetPassword
-    }
+      reportIds: user.reportIds
+    });
+
+    return { state, user: publicEditableUser(user), inviteToken, inviteLink };
   });
-});
 
-app.post("/api/admin/users/:username/resend-invite", requireSession, requireAdmin, async (req, res) => {
-  const state = loadFreshState();
-  cleanExpiredState(state);
-
-  const user = findUser(state, req.params.username);
-  if (!user) {
-    return res.status(404).json({ error: "Utente non trovato" });
-  }
-
-  const inviteToken = createInviteForUser(state, user.username, req.auth.user.username);
-  const inviteLink = buildInviteLink(state, inviteToken);
-  logAudit(state, req.auth.user.username, "resend-invite", user.username);
-  saveFreshState(state);
-  const emailStatus = await sendInviteForUser(state, user, inviteToken);
-
-  res.json({
-    inviteToken,
-    inviteLink,
+  const emailStatus = await sendInviteAndAudit(result.state, result.user, result.inviteToken);
+  res.status(201).json({
+    user: result.user,
+    inviteToken: result.inviteToken,
+    inviteLink: result.inviteLink,
     emailSent: emailStatus.sent,
     emailError: emailStatus.error ?? null
   });
-});
+}));
 
-app.delete("/api/admin/users/:username", requireSession, requireAdmin, (req, res) => {
-  const state = loadFreshState();
-  cleanExpiredState(state);
+app.put("/api/admin/users/:username", requireSession, requireAdmin, asyncRoute(async (req, res) => {
+  const result = await withStateTransaction((state) => {
+    cleanExpiredState(state);
 
-  const normalizedUsername = normalizeUsername(req.params.username);
-  if (normalizedUsername === normalizeUsername(req.auth.user.username)) {
-    return res.status(400).json({ error: "Non puoi eliminare il tuo account. Puoi solo cambiare la password." });
+    const user = findUser(state, req.params.username);
+    if (!user) {
+      fail(404, "Utente non trovato");
+    }
+
+    const role = cleanString(req.body.role ?? user.role).toLowerCase();
+    if (!["admin", "user"].includes(role)) {
+      fail(400, "Ruolo non valido");
+    }
+
+    if (req.body.email !== undefined) {
+      const emailValidation = validateEmail(req.body.email);
+      if (emailValidation.error) {
+        fail(400, emailValidation.error);
+      }
+      user.email = emailValidation.email;
+    }
+
+    const reportIds = Array.isArray(req.body.reportIds)
+      ? [...new Set(req.body.reportIds.map((reportId) => normalizeReportId(reportId)).filter(Boolean))]
+      : user.reportIds;
+
+    const invalidReportIds = reportIds.filter((reportId) => !findReport(state, reportId));
+    if (invalidReportIds.length) {
+      fail(400, `Report non trovati: ${invalidReportIds.join(", ")}`);
+    }
+
+    if (typeof req.body.active === "boolean") {
+      user.active = req.body.active;
+    }
+
+    user.role = role;
+    user.reportIds = role === "admin" ? [] : reportIds;
+    user.updatedAt = nowIso();
+
+    if (req.body.resetInvite === true) {
+      const inviteToken = createInviteForUser(state, user.username, req.auth.user.username);
+      const inviteLink = buildInviteLink(state, inviteToken);
+      logAudit(state, req.auth.user.username, "reset-invite", user.username);
+      return {
+        state,
+        user: publicEditableUser(user),
+        inviteToken,
+        inviteLink
+      };
+    }
+
+    logAudit(state, req.auth.user.username, "update-user", user.username, {
+      role: user.role,
+      active: user.active,
+      reportIds: user.reportIds
+    });
+    return { user: publicEditableUser(user) };
+  });
+
+  if (!result.inviteToken) {
+    return res.json({ user: result.user });
   }
 
-  const index = state.users.findIndex((user) => normalizeUsername(user.username) === normalizedUsername);
-  if (index === -1) {
-    return res.status(404).json({ error: "Utente non trovato" });
+  const emailStatus = await sendInviteAndAudit(result.state, result.user, result.inviteToken);
+  return res.json({
+    user: result.user,
+    inviteToken: result.inviteToken,
+    inviteLink: result.inviteLink,
+    emailSent: emailStatus.sent,
+    emailError: emailStatus.error ?? null
+  });
+}));
+
+app.post("/api/admin/users/:username/resend-invite", requireSession, requireAdmin, asyncRoute(async (req, res) => {
+  const result = await withStateTransaction((state) => {
+    cleanExpiredState(state);
+
+    const user = findUser(state, req.params.username);
+    if (!user) {
+      fail(404, "Utente non trovato");
+    }
+
+    const inviteToken = createInviteForUser(state, user.username, req.auth.user.username);
+    const inviteLink = buildInviteLink(state, inviteToken);
+    logAudit(state, req.auth.user.username, "resend-invite", user.username);
+    return { state, user: publicEditableUser(user), inviteToken, inviteLink };
+  });
+
+  const emailStatus = await sendInviteAndAudit(result.state, result.user, result.inviteToken);
+  res.json({
+    inviteToken: result.inviteToken,
+    inviteLink: result.inviteLink,
+    emailSent: emailStatus.sent,
+    emailError: emailStatus.error ?? null
+  });
+}));
+
+app.post("/api/admin/invites/:token/send", requireSession, requireAdmin, asyncRoute(async (req, res) => {
+  const token = cleanString(req.params.token);
+  const result = await withStateTransaction((state) => {
+    cleanExpiredState(state);
+
+    const invite = state.invites.find((entry) => entry.token === token && !entry.usedAt);
+    if (!invite || isExpired(invite.expiresAt)) {
+      fail(404, "Token non trovato, gia utilizzato o scaduto");
+    }
+
+    const user = findUser(state, invite.username);
+    if (!user) {
+      fail(404, "Utente associato al token non trovato");
+    }
+
+    if (!user.email) {
+      fail(400, "Aggiungi e salva prima l'email nel profilo dello user");
+    }
+
+    return {
+      state,
+      user: publicEditableUser(user),
+      inviteLink: buildInviteLink(state, token)
+    };
+  });
+
+  const emailStatus = await sendInviteAndAudit(result.state, result.user, token);
+  if (emailStatus.sent) {
+    try {
+      await recordInviteEmailSent(token, result.user.username, result.user.email, req.auth.user.username);
+    } catch (error) {
+      console.error("Email inviata, ma registrazione audit fallita", error);
+    }
   }
 
-  const [removedUser] = state.users.splice(index, 1);
-  state.sessions = state.sessions.filter((session) => normalizeUsername(session.username) !== normalizedUsername);
-  state.invites = state.invites.filter((invite) => normalizeUsername(invite.username) !== normalizedUsername);
-  logAudit(state, req.auth.user.username, "delete-user", removedUser.username);
-  saveFreshState(state);
+  res.json({
+    token,
+    username: result.user.username,
+    email: result.user.email,
+    inviteLink: result.inviteLink,
+    emailSent: emailStatus.sent,
+    emailError: emailStatus.error ?? null
+  });
+}));
+
+app.delete("/api/admin/users/:username", requireSession, requireAdmin, asyncRoute(async (req, res) => {
+  await withStateTransaction((state) => {
+    cleanExpiredState(state);
+
+    const normalizedUsername = normalizeUsername(req.params.username);
+    if (normalizedUsername === normalizeUsername(req.auth.user.username)) {
+      fail(400, "Non puoi eliminare il tuo account. Puoi solo cambiare la password.");
+    }
+
+    const index = state.users.findIndex((user) => normalizeUsername(user.username) === normalizedUsername);
+    if (index === -1) {
+      fail(404, "Utente non trovato");
+    }
+
+    const [removedUser] = state.users.splice(index, 1);
+    state.sessions = state.sessions.filter((session) => normalizeUsername(session.username) !== normalizedUsername);
+    state.invites = state.invites.filter((invite) => normalizeUsername(invite.username) !== normalizedUsername);
+    logAudit(state, req.auth.user.username, "delete-user", removedUser.username);
+  });
 
   res.json({ message: "Utente eliminato" });
-});
+}));
 
-app.post("/api/admin/reports", requireSession, requireAdmin, (req, res) => {
-  const state = loadFreshState();
-  cleanExpiredState(state);
+app.post("/api/admin/reports", requireSession, requireAdmin, asyncRoute(async (req, res) => {
+  const report = await withStateTransaction((state) => {
+    cleanExpiredState(state);
 
-  const id = normalizeReportId(req.body.id);
-  const title = cleanString(req.body.title);
-  const url = cleanString(req.body.url);
-  const active = req.body.active !== false;
+    const id = normalizeReportId(req.body.id);
+    const title = cleanString(req.body.title);
+    const url = cleanString(req.body.url);
+    const active = req.body.active !== false;
 
-  if (!id) {
-    return res.status(400).json({ error: "Codice report obbligatorio" });
-  }
+    if (!id) {
+      fail(400, "Codice report obbligatorio");
+    }
 
-  if (!title) {
-    return res.status(400).json({ error: "Titolo report obbligatorio" });
-  }
+    if (!title) {
+      fail(400, "Titolo report obbligatorio");
+    }
 
-  if (!url) {
-    return res.status(400).json({ error: "URL report obbligatorio" });
-  }
+    if (!url) {
+      fail(400, "URL report obbligatorio");
+    }
 
-  if (state.reports.some((report) => report.id === id)) {
-    return res.status(400).json({ error: "Report gia esistente" });
-  }
+    if (state.reports.some((entry) => entry.id === id)) {
+      fail(400, "Report gia esistente");
+    }
 
-  const now = nowIso();
-  state.reports.push({
-    id,
-    title,
-    url,
-    active,
-    createdAt: now,
-    updatedAt: now
+    const now = nowIso();
+    state.reports.push({
+      id,
+      title,
+      url,
+      active,
+      createdAt: now,
+      updatedAt: now
+    });
+
+    logAudit(state, req.auth.user.username, "create-report", id, { title, url, active });
+    return findReport(state, id);
   });
 
-  logAudit(state, req.auth.user.username, "create-report", id, { title, url, active });
-  saveFreshState(state);
+  res.status(201).json({ report });
+}));
 
-  res.status(201).json({ report: findReport(state, id) });
-});
+app.put("/api/admin/reports/:id", requireSession, requireAdmin, asyncRoute(async (req, res) => {
+  const report = await withStateTransaction((state) => {
+    cleanExpiredState(state);
 
-app.put("/api/admin/reports/:id", requireSession, requireAdmin, (req, res) => {
-  const state = loadFreshState();
-  cleanExpiredState(state);
+    const currentReport = findReport(state, req.params.id);
+    if (!currentReport) {
+      fail(404, "Report non trovato");
+    }
 
-  const report = findReport(state, req.params.id);
-  if (!report) {
-    return res.status(404).json({ error: "Report non trovato" });
-  }
+    const title = cleanString(req.body.title ?? currentReport.title);
+    const url = cleanString(req.body.url ?? currentReport.url);
 
-  const title = cleanString(req.body.title ?? report.title);
-  const url = cleanString(req.body.url ?? report.url);
+    if (!title || !url) {
+      fail(400, "Titolo e URL sono obbligatori");
+    }
 
-  if (!title || !url) {
-    return res.status(400).json({ error: "Titolo e URL sono obbligatori" });
-  }
+    currentReport.title = title;
+    currentReport.url = url;
+    if (typeof req.body.active === "boolean") {
+      currentReport.active = req.body.active;
+    }
+    currentReport.updatedAt = nowIso();
 
-  report.title = title;
-  report.url = url;
-  if (typeof req.body.active === "boolean") {
-    report.active = req.body.active;
-  }
-  report.updatedAt = nowIso();
-
-  logAudit(state, req.auth.user.username, "update-report", report.id, {
-    title: report.title,
-    url: report.url,
-    active: report.active
+    logAudit(state, req.auth.user.username, "update-report", currentReport.id, {
+      title: currentReport.title,
+      url: currentReport.url,
+      active: currentReport.active
+    });
+    return currentReport;
   });
-  saveFreshState(state);
 
   res.json({ report });
-});
+}));
 
-app.delete("/api/admin/reports/:id", requireSession, requireAdmin, (req, res) => {
-  const state = loadFreshState();
-  cleanExpiredState(state);
+app.delete("/api/admin/reports/:id", requireSession, requireAdmin, asyncRoute(async (req, res) => {
+  await withStateTransaction((state) => {
+    cleanExpiredState(state);
 
-  const normalizedReportId = normalizeReportId(req.params.id);
-  const index = state.reports.findIndex((report) => report.id === normalizedReportId);
-  if (index === -1) {
-    return res.status(404).json({ error: "Report non trovato" });
-  }
+    const normalizedReportId = normalizeReportId(req.params.id);
+    const index = state.reports.findIndex((report) => report.id === normalizedReportId);
+    if (index === -1) {
+      fail(404, "Report non trovato");
+    }
 
-  const [removedReport] = state.reports.splice(index, 1);
-  state.users.forEach((user) => {
-    user.reportIds = (Array.isArray(user.reportIds) ? user.reportIds : []).filter((reportId) => reportId !== removedReport.id);
+    const [removedReport] = state.reports.splice(index, 1);
+    state.users.forEach((user) => {
+      user.reportIds = (Array.isArray(user.reportIds) ? user.reportIds : []).filter((reportId) => reportId !== removedReport.id);
+    });
+
+    logAudit(state, req.auth.user.username, "delete-report", removedReport.id);
   });
 
-  logAudit(state, req.auth.user.username, "delete-report", removedReport.id);
-  saveFreshState(state);
-
   res.json({ message: "Report eliminato" });
-});
+}));
 
 app.get("/api/admin/audit", requireSession, requireAdmin, (req, res) => {
   const state = loadFreshState();
@@ -991,6 +1118,19 @@ app.use((req, res) => {
   res.status(404).json({ error: "Endpoint non trovato" });
 });
 
-app.listen(3000, () => {
-  console.log("Server in ascolto su http://localhost:3000");
+app.use((error, req, res, next) => {
+  if (res.headersSent) {
+    return next(error);
+  }
+
+  const status = error instanceof ApiError ? error.status : 500;
+  const message = error instanceof ApiError ? error.message : "Errore interno del server";
+  if (status >= 500) {
+    console.error(error);
+  }
+  return res.status(status).json({ error: message });
+});
+
+app.listen(serverPort, () => {
+  console.log(`Server in ascolto sulla porta ${serverPort}`);
 });

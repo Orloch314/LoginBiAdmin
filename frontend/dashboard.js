@@ -10,6 +10,7 @@ const adminSection = document.getElementById("adminSection");
 const usersTable = document.getElementById("usersTable");
 const reportsTable = document.getElementById("reportsTable");
 const pendingInvites = document.getElementById("pendingInvites");
+const pendingInvitesResult = document.getElementById("pendingInvitesResult");
 const logoutBtn = document.getElementById("logoutBtn");
 const changePasswordForm = document.getElementById("changePasswordForm");
 const createUserForm = document.getElementById("createUserForm");
@@ -36,6 +37,8 @@ const smtpPasswordStatus = document.getElementById("smtpPasswordStatus");
 let dashboardState = { users: [], reports: [], pendingInvites: [], smtpSettings: {} };
 let currentUser = user;
 let editingReportId = null;
+let assignedReports = [];
+let activeReportId = null;
 
 function setBoxMessage(element, text, type = "success") {
   element.className = `invite-box ${type === "success" ? "" : "error"}`.trim();
@@ -85,6 +88,7 @@ function toggleFieldVisibility(inputId, buttonId) {
   const isHidden = input.type === "password";
   input.type = isHidden ? "text" : "password";
   button.setAttribute("aria-label", isHidden ? "Nascondi password" : "Mostra password");
+  button.innerText = isHidden ? "Nascondi" : "Mostra";
 }
 
 async function requestJson(url, options = {}) {
@@ -107,40 +111,91 @@ async function requestJson(url, options = {}) {
 
 function renderSummary(userData) {
   summary.innerHTML = `
-    <div class="card" style="padding:16px;">
-      <strong>Ultimo accesso</strong>
-      <div>${escapeHtml(formatDate(userData.lastLoginAt))}</div>
+    <div class="metric-card metric-wide">
+      <span class="metric-label">Ultimo accesso</span>
+      <strong>${escapeHtml(formatDate(userData.lastLoginAt))}</strong>
+      <small>Data e ora dell’ultimo ingresso</small>
     </div>
-    <div class="card" style="padding:16px;">
-      <strong>Accessi ultimi 7 giorni</strong>
-      <div>${escapeHtml(userData.logins7d)}</div>
+    <div class="metric-card">
+      <span class="metric-label">Ultimi 7 giorni</span>
+      <strong>${escapeHtml(userData.logins7d)}</strong>
+      <small>Accessi recenti</small>
     </div>
-    <div class="card" style="padding:16px;">
-      <strong>Accessi ultimi 30 giorni</strong>
-      <div>${escapeHtml(userData.logins30d)}</div>
+    <div class="metric-card">
+      <span class="metric-label">Ultimi 30 giorni</span>
+      <strong>${escapeHtml(userData.logins30d)}</strong>
+      <small>Accessi mensili</small>
     </div>
-    <div class="card" style="padding:16px;">
-      <strong>Ruolo</strong>
-      <div>${escapeHtml(userData.role)}</div>
+    <div class="metric-card">
+      <span class="metric-label">Accessi totali</span>
+      <strong>${escapeHtml(userData.totalLogins)}</strong>
+      <small>Storico completo</small>
+    </div>
+    <div class="metric-card">
+      <span class="metric-label">Ruolo</span>
+      <strong class="metric-role">${escapeHtml(userData.role)}</strong>
+      <small>Profilo autorizzativo</small>
     </div>
   `;
 }
 
 function renderReports(reports) {
+  assignedReports = reports;
   if (!reports.length) {
-    reportsContainer.innerHTML = "<p>Nessun report assegnato</p>";
+    reportsContainer.innerHTML = `
+      <div class="empty-state">
+        <span>▥</span>
+        <h3>Nessun report assegnato</h3>
+        <p>Contatta l’amministratore per richiedere l’accesso a un report.</p>
+      </div>`;
     return;
   }
 
-  reportsContainer.innerHTML = reports
-    .map(
-      (report) => `
-        <div style="margin-bottom:20px;">
-          <h3>${escapeHtml(report.title)}</h3>
-          <iframe class="report-frame" src="${escapeHtml(report.url)}" allowfullscreen></iframe>
-        </div>`
-    )
-    .join("");
+  if (!activeReportId || !reports.some((report) => report.id === activeReportId)) {
+    activeReportId = reports[0].id;
+  }
+
+  const activeReport = reports.find((report) => report.id === activeReportId);
+  reportsContainer.innerHTML = `
+    <div class="report-workspace">
+      <aside class="report-sidebar">
+        <span class="report-sidebar-label">Report disponibili</span>
+        ${reports.map((report) => `
+          <button
+            type="button"
+            class="report-nav-item ${report.id === activeReportId ? "active" : ""}"
+            data-action="open-report"
+            data-report="${escapeHtml(report.id)}"
+          >
+            <span class="report-nav-icon">▥</span>
+            <span>
+              <strong>${escapeHtml(report.title)}</strong>
+              <small>${escapeHtml(report.id)}</small>
+            </span>
+          </button>`).join("")}
+      </aside>
+      <div class="report-view">
+        <div class="report-view-header">
+          <div>
+            <span class="eyebrow">Report attivo</span>
+            <h3>${escapeHtml(activeReport.title)}</h3>
+          </div>
+          <a class="report-external-link" href="${escapeHtml(activeReport.url)}" target="_blank" rel="noopener noreferrer">Apri in nuova scheda</a>
+        </div>
+        <iframe class="report-frame" src="${escapeHtml(activeReport.url)}" title="${escapeHtml(activeReport.title)}" allowfullscreen></iframe>
+      </div>
+    </div>`;
+}
+
+function activateAdminTab(tabName) {
+  document.querySelectorAll("[data-admin-panel]").forEach((panel) => {
+    panel.classList.toggle("hidden", panel.dataset.adminPanel !== tabName);
+  });
+  document.querySelectorAll(".admin-tab").forEach((tab) => {
+    const isActive = tab.dataset.tab === tabName;
+    tab.classList.toggle("active", isActive);
+    tab.setAttribute("aria-selected", String(isActive));
+  });
 }
 
 function renderAdminForms(reports, users) {
@@ -171,6 +226,7 @@ function renderUsersTable(users) {
           <td>${escapeHtml(formatDate(entry.lastLoginAt))}</td>
           <td>${escapeHtml(entry.logins7d)}</td>
           <td>${escapeHtml(entry.logins30d)}</td>
+          <td>${escapeHtml(entry.totalLogins)}</td>
           <td>${escapeHtml(entry.email || "")}</td>
           <td>${status}</td>
           <td>${reportCount}</td>
@@ -210,11 +266,27 @@ function renderPendingInvites(invites) {
   pendingInvites.innerHTML = invites
     .map(
       (invite) => `
-        <div style="margin-bottom:12px;">
-          <strong>${escapeHtml(invite.username)}</strong><br />
-          <span class="muted">Scade: ${escapeHtml(formatDate(invite.expiresAt))}</span><br />
-          <span>${escapeHtml(`${window.location.origin}/login.html?invite=${invite.token}`)}</span>
-        </div>`
+        <article class="invite-item">
+          <div class="invite-item-header">
+            <div>
+              <strong>${escapeHtml(invite.username)}</strong>
+              <span>${escapeHtml(invite.email || "Email da aggiungere nel profilo")}</span>
+            </div>
+            <span class="status-pill warn">Pendente</span>
+          </div>
+          <div class="invite-meta">
+            <span><strong>Scadenza</strong>${escapeHtml(formatDate(invite.expiresAt))}</span>
+            <span><strong>Ultimo invio</strong>${escapeHtml(formatDate(invite.lastSentAt))}</span>
+          </div>
+          <div class="invite-link">${escapeHtml(`${window.location.origin}/login.html?invite=${invite.token}`)}</div>
+          <button
+            type="button"
+            class="secondary"
+            data-action="send-pending-invite"
+            data-token="${escapeHtml(invite.token)}"
+            ${invite.email ? "" : 'disabled title="Salva prima una email nel profilo dello user"'}
+          >Invia token per email</button>
+        </article>`
     )
     .join("");
 }
@@ -263,6 +335,7 @@ async function loadDashboard() {
     currentUser = me.user;
     welcome.innerText = `Benvenuto, ${me.user.username}!`;
     userSubtitle.innerText = `Ruolo: ${me.user.role}`;
+    document.querySelector(".user-avatar").innerText = me.user.username.slice(0, 1).toUpperCase();
     renderSummary(me.user);
 
     if (me.isAdmin) {
@@ -490,9 +563,23 @@ document.addEventListener("click", async (event) => {
   const action = button.dataset.action;
   const userName = button.dataset.user;
   const reportIdValue = button.dataset.report;
+  const inviteTokenValue = button.dataset.token;
+  const tabName = button.dataset.tab;
 
   try {
+    if (action === "admin-tab") {
+      activateAdminTab(tabName);
+      return;
+    }
+
+    if (action === "open-report") {
+      activeReportId = reportIdValue;
+      renderReports(assignedReports);
+      return;
+    }
+
     if (action === "select-user") {
+      activateAdminTab("users");
       selectedUser.value = userName;
       refreshSelectedUserPanel();
       return;
@@ -503,6 +590,30 @@ document.addEventListener("click", async (event) => {
         method: "POST"
       });
       setBoxMessage(assignResult, `Token rigenerato: ${response.inviteLink}`);
+      return;
+    }
+
+    if (action === "send-pending-invite") {
+      const originalText = button.innerText;
+      button.disabled = true;
+      button.innerText = "Invio...";
+      pendingInvitesResult.classList.add("hidden");
+
+      try {
+        const response = await requestJson(`/api/admin/invites/${encodeURIComponent(inviteTokenValue)}/send`, {
+          method: "POST"
+        });
+        setBoxMessage(
+          pendingInvitesResult,
+          response.emailSent
+            ? `Token inviato a ${response.email}.`
+            : `Email non inviata: ${response.emailError || "errore sconosciuto"}`,
+          response.emailSent ? "success" : "error"
+        );
+      } finally {
+        button.disabled = false;
+        button.innerText = originalText;
+      }
       return;
     }
 
@@ -517,12 +628,14 @@ document.addEventListener("click", async (event) => {
     }
 
     if (action === "focus-password") {
+      activateAdminTab("security");
       document.getElementById("currentPassword").focus();
       changePasswordForm.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
     if (action === "edit-report") {
+      activateAdminTab("reports");
       const report = dashboardState.reports.find((entry) => entry.id === reportIdValue);
       if (!report) {
         return;
@@ -533,7 +646,7 @@ document.addEventListener("click", async (event) => {
       reportTitle.value = report.title;
       reportUrl.value = report.url;
       reportActive.checked = report.active !== false;
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      reportForm.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
 
@@ -548,7 +661,11 @@ document.addEventListener("click", async (event) => {
       await loadDashboard();
     }
   } catch (error) {
-    alert(error.message);
+    if (action === "send-pending-invite") {
+      setBoxMessage(pendingInvitesResult, error.message, "error");
+    } else {
+      alert(error.message);
+    }
   }
 });
 

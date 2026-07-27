@@ -3,133 +3,146 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard Power BI</title>
+  <title>Portal BI Cidesa</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-  <div class="page">
-    <div class="toolbar">
-      <button id="logoutBtn">Logout</button>
+<body class="app-body">
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-mark">BI</div>
+      <div>
+        <strong>Portal BI</strong>
+        <span>Cidesa Analytics</span>
+      </div>
     </div>
-
-    <div class="card">
-      <h2 id="welcome">Dashboard</h2>
-      <p id="userSubtitle" class="muted"></p>
-      <div id="summary" class="grid-2"></div>
+    <div class="header-actions">
+      <div class="user-chip">
+        <span class="user-avatar" aria-hidden="true">U</span>
+        <div>
+          <strong id="welcome">Dashboard</strong>
+          <span id="userSubtitle">Caricamento profilo...</span>
+        </div>
+      </div>
+      <button id="logoutBtn" class="header-logout">Esci</button>
     </div>
+  </header>
 
-    <div id="reportsSection" class="card" style="margin-top:16px;">
-      <h3>Report assegnati</h3>
+  <main class="page app-main">
+    <section class="overview-panel">
+      <div class="section-heading overview-heading">
+        <div>
+          <span class="eyebrow">Panoramica personale</span>
+          <h1>Attività del portale</h1>
+          <p>Consulta rapidamente accessi, stato account e report disponibili.</p>
+        </div>
+        <div class="live-badge"><span></span> Portale operativo</div>
+      </div>
+      <div id="summary" class="metrics-grid"></div>
+    </section>
+
+    <section id="reportsSection" class="content-section">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Area report</span>
+          <h2>I tuoi report</h2>
+          <p>Seleziona un report per aprirlo nell’area di lavoro.</p>
+        </div>
+      </div>
       <div id="reports"></div>
-    </div>
+    </section>
 
-    <div id="adminSection" class="hidden" style="margin-top:16px;">
-      <div class="row">
-        <div class="card">
-          <h3>Cambia password admin</h3>
-          <form id="changePasswordForm">
-            <div class="password-row">
-              <input id="currentPassword" type="password" autocomplete="current-password" placeholder="Password attuale" />
-              <button id="toggleCurrentPassword" type="button" class="secondary password-toggle" aria-label="Mostra password attuale">👁</button>
-            </div>
-            <div class="password-row">
-              <input id="newPassword" type="password" autocomplete="new-password" placeholder="Nuova password" />
-              <button id="toggleNewPassword" type="button" class="secondary password-toggle" aria-label="Mostra nuova password">👁</button>
-            </div>
-            <div class="password-row">
-              <input id="confirmNewPassword" type="password" autocomplete="new-password" placeholder="Conferma nuova password" />
-              <button id="toggleConfirmNewPassword" type="button" class="secondary password-toggle" aria-label="Mostra conferma password">👁</button>
-            </div>
-            <button type="submit">Aggiorna password</button>
-          </form>
-          <div id="changePasswordResult" class="invite-box hidden"></div>
-        </div>
-
-        <div class="card">
-          <h3>Nuovo utente</h3>
-          <form id="createUserForm">
-            <input id="newUsername" placeholder="Username" />
-            <input id="newEmail" type="email" placeholder="Email destinatario" />
-            <select id="newRole">
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-            </select>
-            <div>
-              <strong>Report assegnati</strong>
-              <div id="newUserReports" class="checkbox-list"></div>
-            </div>
-            <button type="submit">Crea utente e invia token</button>
-          </form>
-          <div id="createUserResult" class="invite-box hidden"></div>
-        </div>
-
-        <div class="card">
-          <h3>Assegna report</h3>
-          <form id="assignReportsForm">
-            <select id="selectedUser"></select>
-            <input id="selectedUserEmail" type="email" placeholder="Email destinatario" />
-            <div>
-              <strong>Report disponibili</strong>
-              <div id="assignReportList" class="checkbox-list"></div>
-            </div>
-            <label class="checkbox-item">
-              <input id="selectedUserActive" type="checkbox" />
-              Utente attivo
-            </label>
-            <label class="checkbox-item">
-              <input id="selectedUserAdmin" type="checkbox" />
-              Ruolo admin
-            </label>
-            <button type="submit">Salva assegnazioni</button>
-            <button id="resendInviteBtn" type="button" class="secondary">Rigenera token invito</button>
-          </form>
-          <div id="assignResult" class="invite-box hidden"></div>
+    <section id="adminSection" class="admin-shell hidden">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow">Amministrazione</span>
+          <h2>Gestione del portale</h2>
+          <p>Utenti, report, inviti e configurazioni in un unico spazio.</p>
         </div>
       </div>
 
-      <div class="row" style="margin-top:16px;">
-        <div class="card">
-          <h3>Catalogo report</h3>
-          <form id="reportForm">
-            <input id="reportId" placeholder="Codice report" />
-            <input id="reportTitle" placeholder="Titolo report" />
-            <input id="reportUrl" placeholder="URL Power BI" />
-            <label class="checkbox-item">
-              <input id="reportActive" type="checkbox" checked />
-              Report attivo
-            </label>
-            <div class="toolbar">
-              <button type="submit">Salva report</button>
-              <button id="clearReportFormBtn" type="button" class="secondary">Pulisci</button>
+      <nav class="admin-tabs" aria-label="Sezioni amministrazione">
+        <button type="button" class="admin-tab active" data-action="admin-tab" data-tab="users">Utenti e accessi</button>
+        <button type="button" class="admin-tab" data-action="admin-tab" data-tab="reports">Catalogo report</button>
+        <button type="button" class="admin-tab" data-action="admin-tab" data-tab="email">Email e inviti</button>
+        <button type="button" class="admin-tab" data-action="admin-tab" data-tab="security">Sicurezza</button>
+      </nav>
+
+      <div class="admin-panel" data-admin-panel="users">
+        <div class="panel-intro">
+          <div>
+            <h3>Utenti e assegnazioni</h3>
+            <p>Crea profili, aggiorna email e assegna i report disponibili.</p>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <article class="card">
+            <div class="card-heading">
+              <span class="card-icon">+</span>
+              <div>
+                <h3>Nuovo utente</h3>
+                <p>Crea il profilo e invia il token iniziale.</p>
+              </div>
             </div>
-          </form>
+            <form id="createUserForm">
+              <label for="newUsername">Username</label>
+              <input id="newUsername" placeholder="es. maria.rossi" />
+              <label for="newEmail">Email destinatario</label>
+              <input id="newEmail" type="email" placeholder="utente@azienda.com" />
+              <label for="newRole">Ruolo</label>
+              <select id="newRole">
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
+              <label>Report assegnati</label>
+              <div id="newUserReports" class="checkbox-list"></div>
+              <button type="submit">Crea utente e invia token</button>
+            </form>
+            <div id="createUserResult" class="invite-box hidden"></div>
+          </article>
+
+          <article class="card">
+            <div class="card-heading">
+              <span class="card-icon">↗</span>
+              <div>
+                <h3>Profilo e report</h3>
+                <p>Modifica un utente esistente e le sue autorizzazioni.</p>
+              </div>
+            </div>
+            <form id="assignReportsForm">
+              <label for="selectedUser">Utente</label>
+              <select id="selectedUser"></select>
+              <label for="selectedUserEmail">Email destinatario</label>
+              <input id="selectedUserEmail" type="email" placeholder="utente@azienda.com" />
+              <label>Report disponibili</label>
+              <div id="assignReportList" class="checkbox-list"></div>
+              <div class="option-row">
+                <label class="checkbox-item">
+                  <input id="selectedUserActive" type="checkbox" />
+                  Utente attivo
+                </label>
+                <label class="checkbox-item">
+                  <input id="selectedUserAdmin" type="checkbox" />
+                  Ruolo admin
+                </label>
+              </div>
+              <div class="button-row">
+                <button type="submit">Salva modifiche</button>
+                <button id="resendInviteBtn" type="button" class="secondary">Rigenera token</button>
+              </div>
+            </form>
+            <div id="assignResult" class="invite-box hidden"></div>
+          </article>
         </div>
 
-        <div class="card">
-          <h3>Configurazione SMTP</h3>
-          <form id="smtpSettingsForm">
-            <input id="smtpHost" placeholder="Host SMTP" />
-            <input id="smtpPort" type="number" min="1" max="65535" placeholder="Porta SMTP" />
-            <input id="smtpUser" placeholder="Utente SMTP" />
-            <input id="smtpPassword" type="password" autocomplete="new-password" placeholder="Password SMTP" />
-            <input id="smtpFromName" placeholder="Nome mittente" />
-            <input id="smtpFromEmail" type="email" placeholder="Email mittente" />
-            <input id="smtpPortalUrl" placeholder="URL portale" />
-            <input id="smtpPortalPath" placeholder="Pagina invito" />
-            <input id="emailSubject" placeholder="Oggetto email" />
-            <textarea id="emailBody" rows="8" placeholder="Testo email base"></textarea>
-            <label class="checkbox-item">
-              <input id="smtpClearPassword" type="checkbox" />
-              Cancella password SMTP salvata
-            </label>
-            <button type="submit">Salva SMTP</button>
-          </form>
-          <div id="smtpPasswordStatus" class="muted"></div>
-          <div id="smtpSettingsResult" class="invite-box hidden"></div>
-        </div>
-
-        <div class="card">
-          <h3>Accessi utenti</h3>
+        <article class="card data-card">
+          <div class="card-heading">
+            <span class="card-icon">◎</span>
+            <div>
+              <h3>Accessi utenti</h3>
+              <p>Ultimo ingresso, frequenza recente e totale storico.</p>
+            </div>
+          </div>
           <div class="table-wrap">
             <table>
               <thead>
@@ -139,6 +152,7 @@
                   <th>Ultimo accesso</th>
                   <th>7 giorni</th>
                   <th>30 giorni</th>
+                  <th>Totale</th>
                   <th>Email</th>
                   <th>Stato</th>
                   <th>Report</th>
@@ -148,34 +162,192 @@
               <tbody id="usersTable"></tbody>
             </table>
           </div>
-        </div>
+        </article>
       </div>
 
-      <div class="row" style="margin-top:16px;">
-        <div class="card">
-          <h3>Report disponibili</h3>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Codice</th>
-                  <th>Titolo</th>
-                  <th>Stato</th>
-                  <th>Azioni</th>
-                </tr>
-              </thead>
-              <tbody id="reportsTable"></tbody>
-            </table>
+      <div class="admin-panel hidden" data-admin-panel="reports">
+        <div class="panel-intro">
+          <div>
+            <h3>Catalogo report</h3>
+            <p>Configura i collegamenti Power BI disponibili nel portale.</p>
           </div>
         </div>
+        <div class="catalog-layout">
+          <article class="card catalog-form-card">
+            <div class="card-heading">
+              <span class="card-icon">▤</span>
+              <div>
+                <h3>Dettagli report</h3>
+                <p>Aggiungi un nuovo report o modifica quello selezionato.</p>
+              </div>
+            </div>
+            <form id="reportForm">
+              <label for="reportId">Codice report</label>
+              <input id="reportId" placeholder="es. vendite-mensili" />
+              <label for="reportTitle">Titolo</label>
+              <input id="reportTitle" placeholder="Titolo visualizzato" />
+              <label for="reportUrl">URL Power BI</label>
+              <input id="reportUrl" placeholder="https://app.powerbi.com/view?..." />
+              <label class="checkbox-item">
+                <input id="reportActive" type="checkbox" checked />
+                Report attivo
+              </label>
+              <div class="button-row">
+                <button type="submit">Salva report</button>
+                <button id="clearReportFormBtn" type="button" class="secondary">Pulisci</button>
+              </div>
+            </form>
+          </article>
 
-        <div class="card">
-          <h3>Inviti pendenti</h3>
-          <div id="pendingInvites" class="muted"></div>
+          <article class="card data-card">
+            <div class="card-heading">
+              <span class="card-icon">▦</span>
+              <div>
+                <h3>Report disponibili</h3>
+                <p>Catalogo completo pubblicato nel portale.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Codice</th>
+                    <th>Titolo</th>
+                    <th>Stato</th>
+                    <th>Azioni</th>
+                  </tr>
+                </thead>
+                <tbody id="reportsTable"></tbody>
+              </table>
+            </div>
+          </article>
         </div>
       </div>
-    </div>
-  </div>
+
+      <div class="admin-panel hidden" data-admin-panel="email">
+        <div class="panel-intro">
+          <div>
+            <h3>Email e inviti</h3>
+            <p>Configura il mittente e invia manualmente i token pendenti.</p>
+          </div>
+        </div>
+        <div class="email-layout">
+          <article class="card">
+            <div class="card-heading">
+              <span class="card-icon">@</span>
+              <div>
+                <h3>Configurazione SMTP</h3>
+                <p>Parametri usati per l’invio delle email di attivazione.</p>
+              </div>
+            </div>
+            <form id="smtpSettingsForm" class="smtp-form">
+              <div class="field-grid">
+                <div>
+                  <label for="smtpHost">Host SMTP</label>
+                  <input id="smtpHost" placeholder="mail.example.com" />
+                </div>
+                <div>
+                  <label for="smtpPort">Porta</label>
+                  <input id="smtpPort" type="number" min="1" max="65535" placeholder="465" />
+                </div>
+                <div>
+                  <label for="smtpUser">Utente SMTP</label>
+                  <input id="smtpUser" placeholder="utente@example.com" />
+                </div>
+                <div>
+                  <label for="smtpPassword">Password SMTP</label>
+                  <input id="smtpPassword" type="password" autocomplete="new-password" placeholder="Lascia vuoto per mantenere" />
+                </div>
+                <div>
+                  <label for="smtpFromName">Nome mittente</label>
+                  <input id="smtpFromName" placeholder="Portal BI Cidesa" />
+                </div>
+                <div>
+                  <label for="smtpFromEmail">Email mittente</label>
+                  <input id="smtpFromEmail" type="email" placeholder="portale@example.com" />
+                </div>
+                <div>
+                  <label for="smtpPortalUrl">URL portale</label>
+                  <input id="smtpPortalUrl" placeholder="https://reportes.example.com" />
+                </div>
+                <div>
+                  <label for="smtpPortalPath">Pagina invito</label>
+                  <input id="smtpPortalPath" placeholder="/admin.html" />
+                </div>
+              </div>
+              <label for="emailSubject">Oggetto email</label>
+              <input id="emailSubject" placeholder="Portal BI" />
+              <label for="emailBody">Testo email base</label>
+              <textarea id="emailBody" rows="8" placeholder="Testo dell’email"></textarea>
+              <label class="checkbox-item">
+                <input id="smtpClearPassword" type="checkbox" />
+                Cancella password SMTP salvata
+              </label>
+              <div class="form-footer">
+                <div id="smtpPasswordStatus" class="muted"></div>
+                <button type="submit">Salva configurazione</button>
+              </div>
+            </form>
+            <div id="smtpSettingsResult" class="invite-box hidden"></div>
+          </article>
+
+          <article class="card invites-card">
+            <div class="card-heading">
+              <span class="card-icon">✉</span>
+              <div>
+                <h3>Inviti pendenti</h3>
+                <p>Invia un token alla volta dopo aver salvato l’email.</p>
+              </div>
+            </div>
+            <div id="pendingInvites"></div>
+            <div id="pendingInvitesResult" class="invite-box hidden"></div>
+          </article>
+        </div>
+      </div>
+
+      <div class="admin-panel hidden" data-admin-panel="security">
+        <div class="panel-intro">
+          <div>
+            <h3>Sicurezza account</h3>
+            <p>Aggiorna la password dell’amministratore collegato.</p>
+          </div>
+        </div>
+        <article class="card security-card">
+          <div class="card-heading">
+            <span class="card-icon">⌁</span>
+            <div>
+              <h3>Cambia password admin</h3>
+              <p>Usa almeno 8 caratteri e una password non condivisa.</p>
+            </div>
+          </div>
+          <form id="changePasswordForm">
+            <label for="currentPassword">Password attuale</label>
+            <div class="password-row">
+              <input id="currentPassword" type="password" autocomplete="current-password" placeholder="Password attuale" />
+              <button id="toggleCurrentPassword" type="button" class="secondary password-toggle" aria-label="Mostra password attuale">Mostra</button>
+            </div>
+            <label for="newPassword">Nuova password</label>
+            <div class="password-row">
+              <input id="newPassword" type="password" autocomplete="new-password" placeholder="Nuova password" />
+              <button id="toggleNewPassword" type="button" class="secondary password-toggle" aria-label="Mostra nuova password">Mostra</button>
+            </div>
+            <label for="confirmNewPassword">Conferma password</label>
+            <div class="password-row">
+              <input id="confirmNewPassword" type="password" autocomplete="new-password" placeholder="Conferma nuova password" />
+              <button id="toggleConfirmNewPassword" type="button" class="secondary password-toggle" aria-label="Mostra conferma password">Mostra</button>
+            </div>
+            <button type="submit">Aggiorna password</button>
+          </form>
+          <div id="changePasswordResult" class="invite-box hidden"></div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <span>Portal BI Cidesa</span>
+    <span>Accesso riservato</span>
+  </footer>
 
   <script src="dashboard.js"></script>
 </body>

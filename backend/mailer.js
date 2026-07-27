@@ -1,5 +1,10 @@
 import tls from "tls";
 
+const configuredSmtpTimeoutMs = Number(process.env.SMTP_TIMEOUT_MS ?? 15000);
+const smtpTimeoutMs = Number.isFinite(configuredSmtpTimeoutMs) && configuredSmtpTimeoutMs > 0
+  ? configuredSmtpTimeoutMs
+  : 15000;
+
 function normalizeNewlines(value) {
   return String(value).replace(/\r?\n/g, "\r\n");
 }
@@ -161,6 +166,11 @@ export async function sendInviteEmail({
     port: smtpPort,
     servername: smtpHost,
     rejectUnauthorized: true
+  });
+  socket.setTimeout(smtpTimeoutMs, () => {
+    const error = new Error(`Timeout SMTP dopo ${smtpTimeoutMs} ms`);
+    error.code = "SMTP_TIMEOUT";
+    socket.destroy(error);
   });
 
   const session = new SmtpSession(socket);
