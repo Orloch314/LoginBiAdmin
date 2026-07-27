@@ -43,7 +43,7 @@ export function readJson(filePath, fallbackValue) {
   const parseFile = (sourcePath) => {
     const content = fs.readFileSync(sourcePath, "utf8");
     if (!content.trim()) {
-      throw new Error(`File JSON vuoto: ${sourcePath}`);
+      throw new Error(`Archivo JSON vacío: ${sourcePath}`);
     }
     return JSON.parse(content);
   };
@@ -53,16 +53,16 @@ export function readJson(filePath, fallbackValue) {
   } catch (error) {
     const backupPath = `${filePath}.bak`;
     if (!fs.existsSync(backupPath)) {
-      throw new Error(`Impossibile leggere ${filePath}: ${error.message}`);
+      throw new Error(`No se pudo leer ${filePath}: ${error.message}`);
     }
 
     try {
       const backupValue = parseFile(backupPath);
       writeJson(filePath, backupValue, { createBackup: false });
-      console.warn(`Ripristinato ${filePath} dal backup ${backupPath}`);
+      console.warn(`Se restauró ${filePath} desde la copia de seguridad ${backupPath}`);
       return backupValue;
     } catch (backupError) {
-      throw new Error(`Impossibile leggere ${filePath} e il backup: ${backupError.message}`);
+      throw new Error(`No se pudieron leer ${filePath} ni la copia de seguridad: ${backupError.message}`);
     }
   }
 }
@@ -182,7 +182,7 @@ async function acquireStateLock() {
     }
   }
 
-  throw new Error(`Timeout acquisizione lock storage dopo ${lockTimeoutMs} ms`);
+  throw new Error(`Tiempo de espera agotado al adquirir el bloqueo de almacenamiento después de ${lockTimeoutMs} ms`);
 }
 
 function stateSnapshot(state) {

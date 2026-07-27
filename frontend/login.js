@@ -30,8 +30,8 @@ function toggleFieldVisibility(inputId, buttonId) {
   const button = document.getElementById(buttonId);
   const isHidden = input.type === "password";
   input.type = isHidden ? "text" : "password";
-  button.setAttribute("aria-label", isHidden ? "Nascondi password" : "Mostra password");
-  button.innerText = isHidden ? "Nascondi" : "Mostra";
+  button.setAttribute("aria-label", isHidden ? "Ocultar contraseña" : "Mostrar contraseña");
+  button.innerText = isHidden ? "Ocultar" : "Mostrar";
 }
 
 async function requestJson(url, options = {}) {
@@ -45,7 +45,7 @@ async function requestJson(url, options = {}) {
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload.error || "Operazione non riuscita");
+    throw new Error(payload.error || "No se pudo completar la operación");
   }
 
   return payload;
@@ -54,7 +54,7 @@ async function requestJson(url, options = {}) {
 if (inviteToken) {
   loginForm.classList.add("hidden");
   inviteForm.classList.remove("hidden");
-  subtitle.innerText = "Completa l'attivazione del tuo account con il token ricevuto.";
+  subtitle.innerText = "Completa la activación de tu cuenta con el token recibido.";
   document.getElementById("inviteToken").value = inviteToken;
 }
 

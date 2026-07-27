@@ -51,10 +51,14 @@ function formatDate(value) {
     return "n/d";
   }
 
-  return new Intl.DateTimeFormat("it-IT", {
+  return new Intl.DateTimeFormat("es-PY", {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(new Date(value));
+}
+
+function formatRole(role) {
+  return role === "admin" ? "Administrador" : "Usuario";
 }
 
 function escapeHtml(value) {
@@ -87,8 +91,8 @@ function toggleFieldVisibility(inputId, buttonId) {
   const button = document.getElementById(buttonId);
   const isHidden = input.type === "password";
   input.type = isHidden ? "text" : "password";
-  button.setAttribute("aria-label", isHidden ? "Nascondi password" : "Mostra password");
-  button.innerText = isHidden ? "Nascondi" : "Mostra";
+  button.setAttribute("aria-label", isHidden ? "Ocultar contraseña" : "Mostrar contraseña");
+  button.innerText = isHidden ? "Ocultar" : "Mostrar";
 }
 
 async function requestJson(url, options = {}) {
@@ -103,7 +107,7 @@ async function requestJson(url, options = {}) {
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload.error || "Operazione non riuscita");
+    throw new Error(payload.error || "No se pudo completar la operación");
   }
 
   return payload;
@@ -112,29 +116,29 @@ async function requestJson(url, options = {}) {
 function renderSummary(userData) {
   summary.innerHTML = `
     <div class="metric-card metric-wide">
-      <span class="metric-label">Ultimo accesso</span>
+      <span class="metric-label">Último acceso</span>
       <strong>${escapeHtml(formatDate(userData.lastLoginAt))}</strong>
-      <small>Data e ora dell’ultimo ingresso</small>
+      <small>Fecha y hora del último ingreso</small>
     </div>
     <div class="metric-card">
-      <span class="metric-label">Ultimi 7 giorni</span>
+      <span class="metric-label">Últimos 7 días</span>
       <strong>${escapeHtml(userData.logins7d)}</strong>
-      <small>Accessi recenti</small>
+      <small>Accesos recientes</small>
     </div>
     <div class="metric-card">
-      <span class="metric-label">Ultimi 30 giorni</span>
+      <span class="metric-label">Últimos 30 días</span>
       <strong>${escapeHtml(userData.logins30d)}</strong>
-      <small>Accessi mensili</small>
+      <small>Accesos mensuales</small>
     </div>
     <div class="metric-card">
-      <span class="metric-label">Accessi totali</span>
+      <span class="metric-label">Accesos totales</span>
       <strong>${escapeHtml(userData.totalLogins)}</strong>
-      <small>Storico completo</small>
+      <small>Historial completo</small>
     </div>
     <div class="metric-card">
-      <span class="metric-label">Ruolo</span>
-      <strong class="metric-role">${escapeHtml(userData.role)}</strong>
-      <small>Profilo autorizzativo</small>
+      <span class="metric-label">Rol</span>
+      <strong class="metric-role">${escapeHtml(formatRole(userData.role))}</strong>
+      <small>Perfil de autorización</small>
     </div>
   `;
 }
@@ -145,8 +149,8 @@ function renderReports(reports) {
     reportsContainer.innerHTML = `
       <div class="empty-state">
         <span>▥</span>
-        <h3>Nessun report assegnato</h3>
-        <p>Contatta l’amministratore per richiedere l’accesso a un report.</p>
+        <h3>No hay reportes asignados</h3>
+        <p>Contacta al administrador para solicitar acceso a un reporte.</p>
       </div>`;
     return;
   }
@@ -159,7 +163,7 @@ function renderReports(reports) {
   reportsContainer.innerHTML = `
     <div class="report-workspace">
       <aside class="report-sidebar">
-        <span class="report-sidebar-label">Report disponibili</span>
+        <span class="report-sidebar-label">Reportes disponibles</span>
         ${reports.map((report) => `
           <button
             type="button"
@@ -177,10 +181,10 @@ function renderReports(reports) {
       <div class="report-view">
         <div class="report-view-header">
           <div>
-            <span class="eyebrow">Report attivo</span>
+            <span class="eyebrow">Reporte activo</span>
             <h3>${escapeHtml(activeReport.title)}</h3>
           </div>
-          <a class="report-external-link" href="${escapeHtml(activeReport.url)}" target="_blank" rel="noopener noreferrer">Apri in nuova scheda</a>
+          <a class="report-external-link" href="${escapeHtml(activeReport.url)}" target="_blank" rel="noopener noreferrer">Abrir en una nueva pestaña</a>
         </div>
         <iframe class="report-frame" src="${escapeHtml(activeReport.url)}" title="${escapeHtml(activeReport.title)}" allowfullscreen></iframe>
       </div>
@@ -203,7 +207,7 @@ function renderAdminForms(reports, users) {
   assignReportList.innerHTML = reportCheckboxHtml(reports, "assignReportIds");
 
   selectedUser.innerHTML = users
-    .map((entry) => `<option value="${escapeHtml(entry.username)}">${escapeHtml(entry.username)} (${escapeHtml(entry.role)})</option>`)
+    .map((entry) => `<option value="${escapeHtml(entry.username)}">${escapeHtml(entry.username)} (${escapeHtml(formatRole(entry.role))})</option>`)
     .join("");
 
   refreshSelectedUserPanel();
@@ -212,17 +216,17 @@ function renderAdminForms(reports, users) {
 function renderUsersTable(users) {
   usersTable.innerHTML = users
     .map((entry) => {
-      const status = entry.active ? '<span class="status-pill ok">attivo</span>' : '<span class="status-pill warn">inattivo</span>';
+      const status = entry.active ? '<span class="status-pill ok">activo</span>' : '<span class="status-pill warn">inactivo</span>';
       const reportCount = Array.isArray(entry.reportIds) ? entry.reportIds.length : 0;
       const isCurrentUser = currentUser && entry.username === currentUser.username;
       const selfAction = isCurrentUser
-        ? '<button type="button" class="secondary" data-action="focus-password">Password</button>'
-        : `<button type="button" class="danger" data-action="delete-user" data-user="${escapeHtml(entry.username)}">Elimina</button>`;
+        ? '<button type="button" class="secondary" data-action="focus-password">Contraseña</button>'
+        : `<button type="button" class="danger" data-action="delete-user" data-user="${escapeHtml(entry.username)}">Eliminar</button>`;
 
       return `
         <tr>
           <td>${escapeHtml(entry.username)}</td>
-          <td>${escapeHtml(entry.role)}</td>
+          <td>${escapeHtml(formatRole(entry.role))}</td>
           <td>${escapeHtml(formatDate(entry.lastLoginAt))}</td>
           <td>${escapeHtml(entry.logins7d)}</td>
           <td>${escapeHtml(entry.logins30d)}</td>
@@ -231,7 +235,7 @@ function renderUsersTable(users) {
           <td>${status}</td>
           <td>${reportCount}</td>
           <td>
-            <button type="button" class="secondary" data-action="select-user" data-user="${escapeHtml(entry.username)}">Seleziona</button>
+            <button type="button" class="secondary" data-action="select-user" data-user="${escapeHtml(entry.username)}">Seleccionar</button>
             <button type="button" class="secondary" data-action="invite-user" data-user="${escapeHtml(entry.username)}">Token</button>
             ${selfAction}
           </td>
@@ -247,10 +251,10 @@ function renderReportsTable(reports) {
         <tr>
           <td>${escapeHtml(report.id)}</td>
           <td>${escapeHtml(report.title)}</td>
-          <td>${report.active === false ? '<span class="status-pill warn">inattivo</span>' : '<span class="status-pill ok">attivo</span>'}</td>
+          <td>${report.active === false ? '<span class="status-pill warn">inactivo</span>' : '<span class="status-pill ok">activo</span>'}</td>
           <td>
-            <button type="button" class="secondary" data-action="edit-report" data-report="${escapeHtml(report.id)}">Modifica</button>
-            <button type="button" class="danger" data-action="delete-report" data-report="${escapeHtml(report.id)}">Elimina</button>
+            <button type="button" class="secondary" data-action="edit-report" data-report="${escapeHtml(report.id)}">Modificar</button>
+            <button type="button" class="danger" data-action="delete-report" data-report="${escapeHtml(report.id)}">Eliminar</button>
           </td>
         </tr>`
     )
@@ -259,7 +263,7 @@ function renderReportsTable(reports) {
 
 function renderPendingInvites(invites) {
   if (!invites.length) {
-    pendingInvites.innerHTML = "Nessun invito pendente.";
+    pendingInvites.innerHTML = "No hay invitaciones pendientes.";
     return;
   }
 
@@ -270,13 +274,13 @@ function renderPendingInvites(invites) {
           <div class="invite-item-header">
             <div>
               <strong>${escapeHtml(invite.username)}</strong>
-              <span>${escapeHtml(invite.email || "Email da aggiungere nel profilo")}</span>
+              <span>${escapeHtml(invite.email || "Se debe agregar un email al perfil")}</span>
             </div>
-            <span class="status-pill warn">Pendente</span>
+            <span class="status-pill warn">Pendiente</span>
           </div>
           <div class="invite-meta">
-            <span><strong>Scadenza</strong>${escapeHtml(formatDate(invite.expiresAt))}</span>
-            <span><strong>Ultimo invio</strong>${escapeHtml(formatDate(invite.lastSentAt))}</span>
+            <span><strong>Vencimiento</strong>${escapeHtml(formatDate(invite.expiresAt))}</span>
+            <span><strong>Último envío</strong>${escapeHtml(formatDate(invite.lastSentAt))}</span>
           </div>
           <div class="invite-link">${escapeHtml(`${window.location.origin}/login.html?invite=${invite.token}`)}</div>
           <button
@@ -284,8 +288,8 @@ function renderPendingInvites(invites) {
             class="secondary"
             data-action="send-pending-invite"
             data-token="${escapeHtml(invite.token)}"
-            ${invite.email ? "" : 'disabled title="Salva prima una email nel profilo dello user"'}
-          >Invia token per email</button>
+            ${invite.email ? "" : 'disabled title="Primero guarda un email en el perfil del usuario"'}
+          >Enviar token por email</button>
         </article>`
     )
     .join("");
@@ -304,8 +308,8 @@ function renderSmtpSettings(settings = {}) {
   document.getElementById("emailBody").value = settings.emailBody || "";
   document.getElementById("smtpClearPassword").checked = false;
   smtpPasswordStatus.innerText = settings.hasPassword
-    ? "Password SMTP configurata."
-    : "Password SMTP non configurata.";
+    ? "Contraseña SMTP configurada."
+    : "Contraseña SMTP no configurada.";
 }
 
 function refreshSelectedUserPanel() {
@@ -333,8 +337,8 @@ async function loadDashboard() {
   try {
     const me = await requestJson("/api/me");
     currentUser = me.user;
-    welcome.innerText = `Benvenuto, ${me.user.username}!`;
-    userSubtitle.innerText = `Ruolo: ${me.user.role}`;
+    welcome.innerText = `¡Bienvenido, ${me.user.username}!`;
+    userSubtitle.innerText = `Rol: ${formatRole(me.user.role)}`;
     document.querySelector(".user-avatar").innerText = me.user.username.slice(0, 1).toUpperCase();
     renderSummary(me.user);
 
@@ -377,7 +381,7 @@ logoutBtn.addEventListener("click", async () => {
   try {
     await requestJson("/api/auth/logout", { method: "POST" });
   } catch {
-    // Ignore logout errors; clear client state anyway.
+    // Ignorar errores de cierre de sesión y limpiar igualmente el estado local.
   } finally {
     localStorage.clear();
     window.location.href = "login.html";
@@ -399,7 +403,7 @@ changePasswordForm.addEventListener("submit", async (event) => {
     });
 
     changePasswordForm.reset();
-    setBoxMessage(changePasswordResult, "Password aggiornata.");
+    setBoxMessage(changePasswordResult, "Contraseña actualizada.");
   } catch (error) {
     setBoxMessage(changePasswordResult, error.message, "error");
   }
@@ -425,8 +429,8 @@ createUserForm.addEventListener("submit", async (event) => {
     setBoxMessage(
       createUserResult,
       response.emailSent
-        ? `Utente creato. Email inviata. Invito: ${response.inviteLink}`
-        : `Utente creato. Invito: ${response.inviteLink}. Email non inviata: ${response.emailError || "n/d"}`
+        ? `Usuario creado. Email enviado. Invitación: ${response.inviteLink}`
+        : `Usuario creado. Invitación: ${response.inviteLink}. Email no enviado: ${response.emailError || "n/d"}`
     );
     createUserForm.reset();
     await loadDashboard();
@@ -441,7 +445,7 @@ assignReportsForm.addEventListener("submit", async (event) => {
 
   const username = selectedUser.value;
   if (!username) {
-    setBoxMessage(assignResult, "Seleziona un utente.", "error");
+    setBoxMessage(assignResult, "Selecciona un usuario.", "error");
     return;
   }
 
@@ -456,7 +460,7 @@ assignReportsForm.addEventListener("submit", async (event) => {
       })
     });
 
-    setBoxMessage(assignResult, `Utente aggiornato: ${response.user.username}`);
+    setBoxMessage(assignResult, `Usuario actualizado: ${response.user.username}`);
     await loadDashboard();
   } catch (error) {
     setBoxMessage(assignResult, error.message, "error");
@@ -468,7 +472,7 @@ resendInviteBtn.addEventListener("click", async () => {
 
   const username = selectedUser.value;
   if (!username) {
-    setBoxMessage(assignResult, "Seleziona un utente.", "error");
+    setBoxMessage(assignResult, "Selecciona un usuario.", "error");
     return;
   }
 
@@ -480,8 +484,8 @@ resendInviteBtn.addEventListener("click", async () => {
     setBoxMessage(
       assignResult,
       response.emailSent
-        ? `Nuovo invito. Email inviata: ${response.inviteLink}`
-        : `Nuovo invito: ${response.inviteLink}. Email non inviata: ${response.emailError || "n/d"}`
+        ? `Nueva invitación. Email enviado: ${response.inviteLink}`
+        : `Nueva invitación: ${response.inviteLink}. Email no enviado: ${response.emailError || "n/d"}`
     );
   } catch (error) {
     setBoxMessage(assignResult, error.message, "error");
@@ -548,7 +552,7 @@ smtpSettingsForm.addEventListener("submit", async (event) => {
 
     dashboardState.smtpSettings = response.smtpSettings;
     renderSmtpSettings(response.smtpSettings);
-    setBoxMessage(smtpSettingsResult, "Configurazione SMTP salvata.");
+    setBoxMessage(smtpSettingsResult, "Configuración SMTP guardada.");
   } catch (error) {
     setBoxMessage(smtpSettingsResult, error.message, "error");
   }
@@ -589,14 +593,14 @@ document.addEventListener("click", async (event) => {
       const response = await requestJson(`/api/admin/users/${encodeURIComponent(userName)}/resend-invite`, {
         method: "POST"
       });
-      setBoxMessage(assignResult, `Token rigenerato: ${response.inviteLink}`);
+      setBoxMessage(assignResult, `Token regenerado: ${response.inviteLink}`);
       return;
     }
 
     if (action === "send-pending-invite") {
       const originalText = button.innerText;
       button.disabled = true;
-      button.innerText = "Invio...";
+      button.innerText = "Enviando...";
       pendingInvitesResult.classList.add("hidden");
 
       try {
@@ -606,8 +610,8 @@ document.addEventListener("click", async (event) => {
         setBoxMessage(
           pendingInvitesResult,
           response.emailSent
-            ? `Token inviato a ${response.email}.`
-            : `Email non inviata: ${response.emailError || "errore sconosciuto"}`,
+            ? `Token enviado a ${response.email}.`
+            : `Email no enviado: ${response.emailError || "error desconocido"}`,
           response.emailSent ? "success" : "error"
         );
       } finally {
@@ -618,7 +622,7 @@ document.addEventListener("click", async (event) => {
     }
 
     if (action === "delete-user") {
-      if (!window.confirm(`Eliminare ${userName}?`)) {
+      if (!window.confirm(`¿Eliminar al usuario ${userName}?`)) {
         return;
       }
 
@@ -651,7 +655,7 @@ document.addEventListener("click", async (event) => {
     }
 
     if (action === "delete-report") {
-      if (!window.confirm(`Eliminare il report ${reportIdValue}?`)) {
+      if (!window.confirm(`¿Eliminar el reporte ${reportIdValue}?`)) {
         return;
       }
 

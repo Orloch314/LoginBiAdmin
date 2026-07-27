@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -20,10 +20,10 @@
         <span class="user-avatar" aria-hidden="true">U</span>
         <div>
           <strong id="welcome">Dashboard</strong>
-          <span id="userSubtitle">Caricamento profilo...</span>
+          <span id="userSubtitle">Cargando perfil...</span>
         </div>
       </div>
-      <button id="logoutBtn" class="header-logout">Esci</button>
+      <button id="logoutBtn" class="header-logout">Salir</button>
     </div>
   </header>
 
@@ -31,11 +31,11 @@
     <section class="overview-panel">
       <div class="section-heading overview-heading">
         <div>
-          <span class="eyebrow">Panoramica personale</span>
-          <h1>Attività del portale</h1>
-          <p>Consulta rapidamente accessi, stato account e report disponibili.</p>
+          <span class="eyebrow">Resumen personal</span>
+          <h1>Actividad del portal</h1>
+          <p>Consulta rápidamente los accesos, el estado de la cuenta y los reportes disponibles.</p>
         </div>
-        <div class="live-badge"><span></span> Portale operativo</div>
+        <div class="live-badge"><span></span> Portal operativo</div>
       </div>
       <div id="summary" class="metrics-grid"></div>
     </section>
@@ -43,9 +43,9 @@
     <section id="reportsSection" class="content-section">
       <div class="section-heading">
         <div>
-          <span class="eyebrow">Area report</span>
-          <h2>I tuoi report</h2>
-          <p>Seleziona un report per aprirlo nell’area di lavoro.</p>
+          <span class="eyebrow">Área de reportes</span>
+          <h2>Tus reportes</h2>
+          <p>Selecciona un reporte para abrirlo en el área de trabajo.</p>
         </div>
       </div>
       <div id="reports"></div>
@@ -54,24 +54,24 @@
     <section id="adminSection" class="admin-shell hidden">
       <div class="section-heading">
         <div>
-          <span class="eyebrow">Amministrazione</span>
-          <h2>Gestione del portale</h2>
-          <p>Utenti, report, inviti e configurazioni in un unico spazio.</p>
+          <span class="eyebrow">Administración</span>
+          <h2>Gestión del portal</h2>
+          <p>Usuarios, reportes, invitaciones y configuraciones en un único espacio.</p>
         </div>
       </div>
 
-      <nav class="admin-tabs" aria-label="Sezioni amministrazione">
-        <button type="button" class="admin-tab active" data-action="admin-tab" data-tab="users">Utenti e accessi</button>
-        <button type="button" class="admin-tab" data-action="admin-tab" data-tab="reports">Catalogo report</button>
-        <button type="button" class="admin-tab" data-action="admin-tab" data-tab="email">Email e inviti</button>
-        <button type="button" class="admin-tab" data-action="admin-tab" data-tab="security">Sicurezza</button>
+      <nav class="admin-tabs" aria-label="Secciones de administración">
+        <button type="button" class="admin-tab active" data-action="admin-tab" data-tab="users">Usuarios y accesos</button>
+        <button type="button" class="admin-tab" data-action="admin-tab" data-tab="reports">Catálogo de reportes</button>
+        <button type="button" class="admin-tab" data-action="admin-tab" data-tab="email">Email e invitaciones</button>
+        <button type="button" class="admin-tab" data-action="admin-tab" data-tab="security">Seguridad</button>
       </nav>
 
       <div class="admin-panel" data-admin-panel="users">
         <div class="panel-intro">
           <div>
-            <h3>Utenti e assegnazioni</h3>
-            <p>Crea profili, aggiorna email e assegna i report disponibili.</p>
+            <h3>Usuarios y asignaciones</h3>
+            <p>Crea perfiles, actualiza emails y asigna los reportes disponibles.</p>
           </div>
         </div>
 
@@ -80,23 +80,23 @@
             <div class="card-heading">
               <span class="card-icon">+</span>
               <div>
-                <h3>Nuovo utente</h3>
-                <p>Crea il profilo e invia il token iniziale.</p>
+                <h3>Nuevo usuario</h3>
+                <p>Crea el perfil y envía el token inicial.</p>
               </div>
             </div>
             <form id="createUserForm">
-              <label for="newUsername">Username</label>
-              <input id="newUsername" placeholder="es. maria.rossi" />
-              <label for="newEmail">Email destinatario</label>
-              <input id="newEmail" type="email" placeholder="utente@azienda.com" />
-              <label for="newRole">Ruolo</label>
+              <label for="newUsername">Nombre de usuario</label>
+              <input id="newUsername" placeholder="ej. maria.garcia" />
+              <label for="newEmail">Email del destinatario</label>
+              <input id="newEmail" type="email" placeholder="usuario@empresa.com" />
+              <label for="newRole">Rol</label>
               <select id="newRole">
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
+                <option value="user">Usuario</option>
+                <option value="admin">Administrador</option>
               </select>
-              <label>Report assegnati</label>
+              <label>Reportes asignados</label>
               <div id="newUserReports" class="checkbox-list"></div>
-              <button type="submit">Crea utente e invia token</button>
+              <button type="submit">Crear usuario y enviar token</button>
             </form>
             <div id="createUserResult" class="invite-box hidden"></div>
           </article>
@@ -105,30 +105,30 @@
             <div class="card-heading">
               <span class="card-icon">↗</span>
               <div>
-                <h3>Profilo e report</h3>
-                <p>Modifica un utente esistente e le sue autorizzazioni.</p>
+                <h3>Perfil y reportes</h3>
+                <p>Modifica un usuario existente y sus autorizaciones.</p>
               </div>
             </div>
             <form id="assignReportsForm">
-              <label for="selectedUser">Utente</label>
+              <label for="selectedUser">Usuario</label>
               <select id="selectedUser"></select>
-              <label for="selectedUserEmail">Email destinatario</label>
-              <input id="selectedUserEmail" type="email" placeholder="utente@azienda.com" />
-              <label>Report disponibili</label>
+              <label for="selectedUserEmail">Email del destinatario</label>
+              <input id="selectedUserEmail" type="email" placeholder="usuario@empresa.com" />
+              <label>Reportes disponibles</label>
               <div id="assignReportList" class="checkbox-list"></div>
               <div class="option-row">
                 <label class="checkbox-item">
                   <input id="selectedUserActive" type="checkbox" />
-                  Utente attivo
+                  Usuario activo
                 </label>
                 <label class="checkbox-item">
                   <input id="selectedUserAdmin" type="checkbox" />
-                  Ruolo admin
+                  Rol de administrador
                 </label>
               </div>
               <div class="button-row">
-                <button type="submit">Salva modifiche</button>
-                <button id="resendInviteBtn" type="button" class="secondary">Rigenera token</button>
+                <button type="submit">Guardar cambios</button>
+                <button id="resendInviteBtn" type="button" class="secondary">Regenerar token</button>
               </div>
             </form>
             <div id="assignResult" class="invite-box hidden"></div>
@@ -139,24 +139,24 @@
           <div class="card-heading">
             <span class="card-icon">◎</span>
             <div>
-              <h3>Accessi utenti</h3>
-              <p>Ultimo ingresso, frequenza recente e totale storico.</p>
+              <h3>Accesos de usuarios</h3>
+              <p>Último ingreso, frecuencia reciente y total histórico.</p>
             </div>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Utente</th>
-                  <th>Ruolo</th>
-                  <th>Ultimo accesso</th>
-                  <th>7 giorni</th>
-                  <th>30 giorni</th>
-                  <th>Totale</th>
+                  <th>Usuario</th>
+                  <th>Rol</th>
+                  <th>Último acceso</th>
+                  <th>7 días</th>
+                  <th>30 días</th>
+                  <th>Total</th>
                   <th>Email</th>
-                  <th>Stato</th>
-                  <th>Report</th>
-                  <th>Azioni</th>
+                  <th>Estado</th>
+                  <th>Reportes</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody id="usersTable"></tbody>
@@ -168,8 +168,8 @@
       <div class="admin-panel hidden" data-admin-panel="reports">
         <div class="panel-intro">
           <div>
-            <h3>Catalogo report</h3>
-            <p>Configura i collegamenti Power BI disponibili nel portale.</p>
+            <h3>Catálogo de reportes</h3>
+            <p>Configura los enlaces de Power BI disponibles en el portal.</p>
           </div>
         </div>
         <div class="catalog-layout">
@@ -177,24 +177,24 @@
             <div class="card-heading">
               <span class="card-icon">▤</span>
               <div>
-                <h3>Dettagli report</h3>
-                <p>Aggiungi un nuovo report o modifica quello selezionato.</p>
+                <h3>Detalles del reporte</h3>
+                <p>Agrega un nuevo reporte o modifica el seleccionado.</p>
               </div>
             </div>
             <form id="reportForm">
-              <label for="reportId">Codice report</label>
-              <input id="reportId" placeholder="es. vendite-mensili" />
-              <label for="reportTitle">Titolo</label>
-              <input id="reportTitle" placeholder="Titolo visualizzato" />
+              <label for="reportId">Código del reporte</label>
+              <input id="reportId" placeholder="ej. ventas-mensuales" />
+              <label for="reportTitle">Título</label>
+              <input id="reportTitle" placeholder="Título mostrado" />
               <label for="reportUrl">URL Power BI</label>
               <input id="reportUrl" placeholder="https://app.powerbi.com/view?..." />
               <label class="checkbox-item">
                 <input id="reportActive" type="checkbox" checked />
-                Report attivo
+                Reporte activo
               </label>
               <div class="button-row">
-                <button type="submit">Salva report</button>
-                <button id="clearReportFormBtn" type="button" class="secondary">Pulisci</button>
+                <button type="submit">Guardar reporte</button>
+                <button id="clearReportFormBtn" type="button" class="secondary">Limpiar</button>
               </div>
             </form>
           </article>
@@ -203,18 +203,18 @@
             <div class="card-heading">
               <span class="card-icon">▦</span>
               <div>
-                <h3>Report disponibili</h3>
-                <p>Catalogo completo pubblicato nel portale.</p>
+                <h3>Reportes disponibles</h3>
+                <p>Catálogo completo publicado en el portal.</p>
               </div>
             </div>
             <div class="table-wrap">
               <table>
                 <thead>
                   <tr>
-                    <th>Codice</th>
-                    <th>Titolo</th>
-                    <th>Stato</th>
-                    <th>Azioni</th>
+                    <th>Código</th>
+                    <th>Título</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody id="reportsTable"></tbody>
@@ -227,8 +227,8 @@
       <div class="admin-panel hidden" data-admin-panel="email">
         <div class="panel-intro">
           <div>
-            <h3>Email e inviti</h3>
-            <p>Configura il mittente e invia manualmente i token pendenti.</p>
+            <h3>Email e invitaciones</h3>
+            <p>Configura el remitente y envía manualmente los tokens pendientes.</p>
           </div>
         </div>
         <div class="email-layout">
@@ -236,8 +236,8 @@
             <div class="card-heading">
               <span class="card-icon">@</span>
               <div>
-                <h3>Configurazione SMTP</h3>
-                <p>Parametri usati per l’invio delle email di attivazione.</p>
+                <h3>Configuración SMTP</h3>
+                <p>Parámetros utilizados para enviar los emails de activación.</p>
               </div>
             </div>
             <form id="smtpSettingsForm" class="smtp-form">
@@ -247,45 +247,45 @@
                   <input id="smtpHost" placeholder="mail.example.com" />
                 </div>
                 <div>
-                  <label for="smtpPort">Porta</label>
+                  <label for="smtpPort">Puerto</label>
                   <input id="smtpPort" type="number" min="1" max="65535" placeholder="465" />
                 </div>
                 <div>
-                  <label for="smtpUser">Utente SMTP</label>
-                  <input id="smtpUser" placeholder="utente@example.com" />
+                  <label for="smtpUser">Usuario SMTP</label>
+                  <input id="smtpUser" placeholder="usuario@example.com" />
                 </div>
                 <div>
-                  <label for="smtpPassword">Password SMTP</label>
-                  <input id="smtpPassword" type="password" autocomplete="new-password" placeholder="Lascia vuoto per mantenere" />
+                  <label for="smtpPassword">Contraseña SMTP</label>
+                  <input id="smtpPassword" type="password" autocomplete="new-password" placeholder="Dejar vacío para conservarla" />
                 </div>
                 <div>
-                  <label for="smtpFromName">Nome mittente</label>
+                  <label for="smtpFromName">Nombre del remitente</label>
                   <input id="smtpFromName" placeholder="Portal BI Cidesa" />
                 </div>
                 <div>
-                  <label for="smtpFromEmail">Email mittente</label>
-                  <input id="smtpFromEmail" type="email" placeholder="portale@example.com" />
+                  <label for="smtpFromEmail">Email del remitente</label>
+                  <input id="smtpFromEmail" type="email" placeholder="portal@example.com" />
                 </div>
                 <div>
-                  <label for="smtpPortalUrl">URL portale</label>
+                  <label for="smtpPortalUrl">URL del portal</label>
                   <input id="smtpPortalUrl" placeholder="https://reportes.example.com" />
                 </div>
                 <div>
-                  <label for="smtpPortalPath">Pagina invito</label>
+                  <label for="smtpPortalPath">Página de invitación</label>
                   <input id="smtpPortalPath" placeholder="/admin.html" />
                 </div>
               </div>
-              <label for="emailSubject">Oggetto email</label>
+              <label for="emailSubject">Asunto del email</label>
               <input id="emailSubject" placeholder="Portal BI" />
-              <label for="emailBody">Testo email base</label>
-              <textarea id="emailBody" rows="8" placeholder="Testo dell’email"></textarea>
+              <label for="emailBody">Texto base del email</label>
+              <textarea id="emailBody" rows="8" placeholder="Texto del email"></textarea>
               <label class="checkbox-item">
                 <input id="smtpClearPassword" type="checkbox" />
-                Cancella password SMTP salvata
+                Eliminar la contraseña SMTP guardada
               </label>
               <div class="form-footer">
                 <div id="smtpPasswordStatus" class="muted"></div>
-                <button type="submit">Salva configurazione</button>
+                <button type="submit">Guardar configuración</button>
               </div>
             </form>
             <div id="smtpSettingsResult" class="invite-box hidden"></div>
@@ -295,8 +295,8 @@
             <div class="card-heading">
               <span class="card-icon">✉</span>
               <div>
-                <h3>Inviti pendenti</h3>
-                <p>Invia un token alla volta dopo aver salvato l’email.</p>
+                <h3>Invitaciones pendientes</h3>
+                <p>Envía un token a la vez después de guardar el email.</p>
               </div>
             </div>
             <div id="pendingInvites"></div>
@@ -308,35 +308,35 @@
       <div class="admin-panel hidden" data-admin-panel="security">
         <div class="panel-intro">
           <div>
-            <h3>Sicurezza account</h3>
-            <p>Aggiorna la password dell’amministratore collegato.</p>
+            <h3>Seguridad de la cuenta</h3>
+            <p>Actualiza la contraseña del administrador conectado.</p>
           </div>
         </div>
         <article class="card security-card">
           <div class="card-heading">
             <span class="card-icon">⌁</span>
             <div>
-              <h3>Cambia password admin</h3>
-              <p>Usa almeno 8 caratteri e una password non condivisa.</p>
+              <h3>Cambiar contraseña del administrador</h3>
+              <p>Utiliza al menos 8 caracteres y una contraseña que no compartas.</p>
             </div>
           </div>
           <form id="changePasswordForm">
-            <label for="currentPassword">Password attuale</label>
+            <label for="currentPassword">Contraseña actual</label>
             <div class="password-row">
-              <input id="currentPassword" type="password" autocomplete="current-password" placeholder="Password attuale" />
-              <button id="toggleCurrentPassword" type="button" class="secondary password-toggle" aria-label="Mostra password attuale">Mostra</button>
+              <input id="currentPassword" type="password" autocomplete="current-password" placeholder="Contraseña actual" />
+              <button id="toggleCurrentPassword" type="button" class="secondary password-toggle" aria-label="Mostrar contraseña actual">Mostrar</button>
             </div>
-            <label for="newPassword">Nuova password</label>
+            <label for="newPassword">Nueva contraseña</label>
             <div class="password-row">
-              <input id="newPassword" type="password" autocomplete="new-password" placeholder="Nuova password" />
-              <button id="toggleNewPassword" type="button" class="secondary password-toggle" aria-label="Mostra nuova password">Mostra</button>
+              <input id="newPassword" type="password" autocomplete="new-password" placeholder="Nueva contraseña" />
+              <button id="toggleNewPassword" type="button" class="secondary password-toggle" aria-label="Mostrar nueva contraseña">Mostrar</button>
             </div>
-            <label for="confirmNewPassword">Conferma password</label>
+            <label for="confirmNewPassword">Confirmar contraseña</label>
             <div class="password-row">
-              <input id="confirmNewPassword" type="password" autocomplete="new-password" placeholder="Conferma nuova password" />
-              <button id="toggleConfirmNewPassword" type="button" class="secondary password-toggle" aria-label="Mostra conferma password">Mostra</button>
+              <input id="confirmNewPassword" type="password" autocomplete="new-password" placeholder="Confirmar nueva contraseña" />
+              <button id="toggleConfirmNewPassword" type="button" class="secondary password-toggle" aria-label="Mostrar confirmación de contraseña">Mostrar</button>
             </div>
-            <button type="submit">Aggiorna password</button>
+            <button type="submit">Actualizar contraseña</button>
           </form>
           <div id="changePasswordResult" class="invite-box hidden"></div>
         </article>
@@ -346,7 +346,7 @@
 
   <footer class="app-footer">
     <span>Portal BI Cidesa</span>
-    <span>Accesso riservato</span>
+    <span>Acceso restringido</span>
   </footer>
 
   <script src="dashboard.js"></script>

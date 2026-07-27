@@ -77,7 +77,7 @@ class SmtpSession {
       }
     });
     socket.on("close", () => {
-      const error = new Error("La connessione SMTP si e chiusa");
+      const error = new Error("La conexión SMTP se cerró");
       while (this.pending.length) {
         this.pending.shift().reject(error);
       }
@@ -143,7 +143,7 @@ class SmtpSession {
 function expectCode(response, expectedCodes, label) {
   const codes = Array.isArray(expectedCodes) ? expectedCodes : [expectedCodes];
   if (!codes.includes(response.code)) {
-    throw new Error(`${label} fallito: ${response.code} ${response.text}`);
+    throw new Error(`${label} falló: ${response.code} ${response.text}`);
   }
 }
 
@@ -168,7 +168,7 @@ export async function sendInviteEmail({
     rejectUnauthorized: true
   });
   socket.setTimeout(smtpTimeoutMs, () => {
-    const error = new Error(`Timeout SMTP dopo ${smtpTimeoutMs} ms`);
+    const error = new Error(`Tiempo de espera SMTP agotado después de ${smtpTimeoutMs} ms`);
     error.code = "SMTP_TIMEOUT";
     socket.destroy(error);
   });
@@ -193,14 +193,14 @@ export async function sendInviteEmail({
 
 Usuario: ${username}
 Token: ${inviteToken}
-Link invito: ${inviteLink}`;
+Enlace de invitación: ${inviteLink}`;
     const htmlBody = `
 <html>
   <body style="font-family: Arial, sans-serif; color: #222;">
     <p>${textToHtml(body)}</p>
     <p><strong>Usuario:</strong> ${escapeHtml(username)}</p>
     <p><strong>Token:</strong> ${escapeHtml(inviteToken)}</p>
-    <p><strong>Link invito:</strong> <a href="${escapeHtml(inviteLink)}">${escapeHtml(inviteLink)}</a></p>
+    <p><strong>Enlace de invitación:</strong> <a href="${escapeHtml(inviteLink)}">${escapeHtml(inviteLink)}</a></p>
   </body>
 </html>
     `;

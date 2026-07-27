@@ -36,7 +36,7 @@ El portal utiliza escrituras atómicas y un bloqueo compartido para evitar pérd
 
 Variables de entorno disponibles:
 
-- `PORT`: puerto asignado por el hosting; el valor local predeterminado es `3000`.
+- El servidor utiliza siempre el puerto `3000`.
 - `DATA_DIR`: directorio persistente de los archivos JSON; si se omite, se utiliza `backend/data`.
 - `SMTP_TIMEOUT_MS`: tiempo máximo de inactividad SMTP en milisegundos; el valor predeterminado es `15000`.
 - `STORAGE_LOCK_TIMEOUT_MS`: tiempo máximo de espera del bloqueo en milisegundos; el valor predeterminado es `10000`.
@@ -70,20 +70,20 @@ La guía completa de instalación, migración, validación y reversión está di
 
 ## Configuración SMTP
 
-El envío de invitaciones utiliza SMTP sobre TLS. Los parámetros se configuran desde el panel administrativo, en la sección `Email e inviti`.
+El envío de invitaciones utiliza SMTP sobre TLS. Los parámetros se configuran desde el panel administrativo, en la sección `Email e invitaciones`.
 
 Campos principales:
 
 - `Host SMTP`;
-- `Porta SMTP`;
-- `Utente SMTP`;
-- `Password SMTP`;
-- `Nome mittente`;
-- `Email mittente`;
-- `URL portale`;
-- `Pagina invito`;
-- `Oggetto email`;
-- `Testo email base`.
+- `Puerto SMTP`;
+- `Usuario SMTP`;
+- `Contraseña SMTP`;
+- `Nombre del remitente`;
+- `Email del remitente`;
+- `URL del portal`;
+- `Página de invitación`;
+- `Asunto del email`;
+- `Texto base del email`.
 
 La contraseña SMTP, el asunto y el texto del correo se guardan en `smtp-settings.json` dentro de `DATA_DIR`, o en `backend/data/smtp-settings.json` cuando la variable no está configurada. El archivo predeterminado está excluido de Git. Después de guardar, el panel solamente indica si existe una contraseña configurada.
 
@@ -99,7 +99,7 @@ Para los usuarios migrados sin dirección de correo:
 
 1. seleccionar el usuario en el panel de asignaciones;
 2. agregar y guardar su dirección de correo;
-3. abrir la sección `Inviti pendenti`;
-4. pulsar `Invia token per email` junto al token del usuario.
+3. abrir la sección `Invitaciones pendientes`;
+4. pulsar `Enviar token por email` junto al token del usuario.
 
 La operación envía el token existente sin regenerarlo. No existe un envío masivo: cada correo se envía manualmente para reducir el riesgo de bloqueos por spam.

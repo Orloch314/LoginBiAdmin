@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="es">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accesso - Portal BI Cidesa</title>
+  <title>Acceso - Portal BI Cidesa</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="auth-body">
@@ -18,55 +18,55 @@
       </div>
       <div class="auth-copy">
         <span class="eyebrow eyebrow-light">Business intelligence</span>
-        <h1>I dati giusti,<br />nel momento giusto.</h1>
-        <p>Accedi in sicurezza ai report Power BI assegnati al tuo profilo.</p>
+        <h1>Los datos correctos,<br />en el momento adecuado.</h1>
+        <p>Accede de forma segura a los reportes de Power BI asignados a tu perfil.</p>
       </div>
       <div class="auth-features">
-        <div><span>✓</span> Accesso protetto</div>
-        <div><span>✓</span> Report personalizzati</div>
-        <div><span>✓</span> Portale centralizzato</div>
+        <div><span>✓</span> Acceso protegido</div>
+        <div><span>✓</span> Reportes personalizados</div>
+        <div><span>✓</span> Portal centralizado</div>
       </div>
     </section>
 
     <section class="auth-card-wrap">
       <div class="auth-card">
         <div class="auth-card-heading">
-          <span class="eyebrow">Accesso riservato</span>
-          <h2>Benvenuto</h2>
-          <p id="subtitle">Inserisci le credenziali del tuo account per continuare.</p>
+          <span class="eyebrow">Acceso restringido</span>
+          <h2>Bienvenido</h2>
+          <p id="subtitle">Ingresa las credenciales de tu cuenta para continuar.</p>
         </div>
 
         <div id="message" class="error"></div>
 
         <form id="loginForm">
-          <label for="username">Utente</label>
-          <input id="username" autocomplete="username" placeholder="Inserisci username" />
-          <label for="password">Password</label>
+          <label for="username">Usuario</label>
+          <input id="username" autocomplete="username" placeholder="Ingresa el usuario" />
+          <label for="password">Contraseña</label>
           <div class="password-row">
-            <input id="password" type="password" autocomplete="current-password" placeholder="Inserisci password" />
-            <button id="togglePassword" type="button" class="secondary password-toggle" aria-label="Mostra password">Mostra</button>
+            <input id="password" type="password" autocomplete="current-password" placeholder="Ingresa la contraseña" />
+            <button id="togglePassword" type="button" class="secondary password-toggle" aria-label="Mostrar contraseña">Mostrar</button>
           </div>
-          <button type="submit" class="auth-submit">Entra nel portale</button>
+          <button type="submit" class="auth-submit">Ingresar al portal</button>
         </form>
 
         <form id="inviteForm" class="hidden">
-          <label for="inviteToken">Token invito</label>
-          <input id="inviteToken" placeholder="Token ricevuto per email" />
-          <label for="invitePassword">Nuova password</label>
+          <label for="inviteToken">Token de invitación</label>
+          <input id="inviteToken" placeholder="Token recibido por email" />
+          <label for="invitePassword">Nueva contraseña</label>
           <div class="password-row">
-            <input id="invitePassword" type="password" autocomplete="new-password" placeholder="Almeno 8 caratteri" />
-            <button id="toggleInvitePassword" type="button" class="secondary password-toggle" aria-label="Mostra nuova password">Mostra</button>
+            <input id="invitePassword" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" />
+            <button id="toggleInvitePassword" type="button" class="secondary password-toggle" aria-label="Mostrar nueva contraseña">Mostrar</button>
           </div>
-          <label for="invitePasswordConfirm">Conferma password</label>
+          <label for="invitePasswordConfirm">Confirmar contraseña</label>
           <div class="password-row">
-            <input id="invitePasswordConfirm" type="password" autocomplete="new-password" placeholder="Ripeti la password" />
-            <button id="toggleInvitePasswordConfirm" type="button" class="secondary password-toggle" aria-label="Mostra conferma password">Mostra</button>
+            <input id="invitePasswordConfirm" type="password" autocomplete="new-password" placeholder="Repite la contraseña" />
+            <button id="toggleInvitePasswordConfirm" type="button" class="secondary password-toggle" aria-label="Mostrar confirmación de contraseña">Mostrar</button>
           </div>
-          <button type="submit" class="auth-submit">Attiva account</button>
+          <button type="submit" class="auth-submit">Activar cuenta</button>
         </form>
 
         <div class="auth-help">
-          <span>Accesso consentito esclusivamente agli utenti autorizzati.</span>
+          <span>Acceso permitido exclusivamente a usuarios autorizados.</span>
         </div>
       </div>
     </section>

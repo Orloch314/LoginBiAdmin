@@ -25,7 +25,7 @@ const sessionDurationHours = Number(process.env.SESSION_DURATION_HOURS ?? 8);
 const inviteDurationDays = Number(process.env.INVITE_DURATION_DAYS ?? 14);
 const bootstrapUsername = cleanString(process.env.BOOTSTRAP_ADMIN_USERNAME ?? "admin");
 const bootstrapPassword = cleanString(process.env.BOOTSTRAP_ADMIN_PASSWORD ?? "admin123!");
-const serverPort = Number(process.env.PORT ?? 3000);
+const serverPort = 3000;
 const defaultSmtpPort = 465;
 const defaultInvitePortalPath = "/admin.html";
 
@@ -221,45 +221,45 @@ function validateSmtpSettings(payload, currentSettings = {}) {
   }
 
   if (!next.host) {
-    return { error: "Host SMTP obbligatorio" };
+    return { error: "El servidor SMTP es obligatorio" };
   }
 
   if (!Number.isInteger(next.port) || next.port < 1 || next.port > 65535) {
-    return { error: "Porta SMTP non valida" };
+    return { error: "El puerto SMTP no es válido" };
   }
 
   if (!next.user) {
-    return { error: "Utente SMTP obbligatorio" };
+    return { error: "El usuario SMTP es obligatorio" };
   }
 
   if (!next.password) {
-    return { error: "Password SMTP obbligatoria" };
+    return { error: "La contraseña SMTP es obligatoria" };
   }
 
   if (!next.fromName) {
-    return { error: "Nome mittente obbligatorio" };
+    return { error: "El nombre del remitente es obligatorio" };
   }
 
   if (!next.fromEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(next.fromEmail)) {
-    return { error: "Email mittente non valida" };
+    return { error: "El email del remitente no es válido" };
   }
 
   if (!next.portalUrl) {
-    return { error: "URL portale obbligatorio" };
+    return { error: "La URL del portal es obligatoria" };
   }
 
   if (!next.emailSubject) {
-    return { error: "Oggetto email obbligatorio" };
+    return { error: "El asunto del email es obligatorio" };
   }
 
   if (!next.emailBody) {
-    return { error: "Testo email obbligatorio" };
+    return { error: "El texto del email es obligatorio" };
   }
 
   try {
     new URL(next.portalUrl);
   } catch {
-    return { error: "URL portale non valido" };
+    return { error: "La URL del portal no es válida" };
   }
 
   next.portalPath = next.portalPath.startsWith("/") ? next.portalPath : `/${next.portalPath}`;
@@ -282,11 +282,11 @@ function buildInviteLink(state, token) {
 function validateEmail(email) {
   const normalized = normalizeEmail(email);
   if (!normalized) {
-    return { error: "Email obbligatoria" };
+    return { error: "El email es obligatorio" };
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
-    return { error: "Email non valida" };
+    return { error: "El email no es válido" };
   }
 
   return { email: normalized };
@@ -317,7 +317,7 @@ function getSessionToken(req) {
 function requireSession(req, res, next) {
   const sessionToken = getSessionToken(req);
   if (!sessionToken) {
-    return res.status(401).json({ error: "Sessione mancante" });
+    return res.status(401).json({ error: "Falta la sesión" });
   }
 
   const state = loadFreshState();
@@ -325,12 +325,12 @@ function requireSession(req, res, next) {
 
   const session = state.sessions.find((entry) => entry.token === sessionToken && !entry.revokedAt);
   if (!session || isExpired(session.expiresAt)) {
-    return res.status(401).json({ error: "Sessione scaduta" });
+    return res.status(401).json({ error: "La sesión ha vencido" });
   }
 
   const user = findUser(state, session.username);
   if (!user || user.active === false) {
-    return res.status(401).json({ error: "Utente non disponibile" });
+    return res.status(401).json({ error: "El usuario no está disponible" });
   }
 
   req.auth = { sessionToken, user, state, session };
@@ -339,7 +339,7 @@ function requireSession(req, res, next) {
 
 function requireAdmin(req, res, next) {
   if (req.auth?.user?.role !== "admin") {
-    return res.status(403).json({ error: "Permessi insufficienti" });
+    return res.status(403).json({ error: "Permisos insuficientes" });
   }
 
   next();
@@ -397,25 +397,25 @@ function buildSessionPayload(state, user, sessionToken) {
 function ensureValidUserPayload(state, payload, allowRole = true) {
   const username = cleanString(payload.username);
   if (!username) {
-    return { error: "Username obbligatorio" };
+    return { error: "El nombre de usuario es obligatorio" };
   }
 
   const normalizedUsername = normalizeUsername(username);
   if (!normalizedUsername) {
-    return { error: "Username non valido" };
+    return { error: "El nombre de usuario no es válido" };
   }
 
   if (allowRole) {
     const role = cleanString(payload.role ?? "user").toLowerCase();
     if (!["admin", "user"].includes(role)) {
-      return { error: "Ruolo non valido" };
+      return { error: "El rol no es válido" };
     }
   }
 
   const reportIds = Array.isArray(payload.reportIds) ? [...new Set(payload.reportIds.map((reportId) => normalizeReportId(reportId)).filter(Boolean))] : [];
   const invalidReportIds = reportIds.filter((reportId) => !findReport(state, reportId));
   if (invalidReportIds.length) {
-    return { error: `Report non trovati: ${invalidReportIds.join(", ")}` };
+    return { error: `Reportes no encontrados: ${invalidReportIds.join(", ")}` };
   }
 
   const emailValidation = payload.email !== undefined ? validateEmail(payload.email) : null;
@@ -489,13 +489,13 @@ function createInviteForUser(state, username, createdBy) {
 
 async function sendInviteForUser(state, user, token) {
   if (!user.email) {
-    return { sent: false, error: "Email destinatario mancante" };
+    return { sent: false, error: "Falta el email del destinatario" };
   }
 
   const smtpSettings = normalizeSmtpSettings(state.smtpSettings);
   const configError = getSmtpReadyError(smtpSettings);
   if (configError) {
-    return { sent: false, error: `Configurazione SMTP incompleta: ${configError}` };
+    return { sent: false, error: `Configuración SMTP incompleta: ${configError}` };
   }
 
   try {
@@ -574,7 +574,7 @@ app.post("/api/auth/login", asyncRoute(async (req, res) => {
     !authenticatedUser.passwordHash ||
     !verifyPassword(password, authenticatedUser.passwordHash)
   ) {
-    fail(401, "Credenziali errate");
+    fail(401, "Credenciales incorrectas");
   }
 
   const authenticatedPasswordHash = authenticatedUser.passwordHash;
@@ -583,7 +583,7 @@ app.post("/api/auth/login", asyncRoute(async (req, res) => {
 
     const user = findUser(state, username);
     if (!user || user.active === false || user.passwordHash !== authenticatedPasswordHash) {
-      fail(401, "Credenziali errate");
+      fail(401, "Credenciales incorrectas");
     }
 
     const sessionToken = createSession(state, user.username);
@@ -603,15 +603,15 @@ app.post("/api/auth/accept-invite", asyncRoute(async (req, res) => {
   const confirmPassword = String(req.body.confirmPassword ?? "");
 
   if (!token) {
-    fail(400, "Token obbligatorio");
+    fail(400, "El token es obligatorio");
   }
 
   if (!password || password.length < 8) {
-    fail(400, "La password deve avere almeno 8 caratteri");
+    fail(400, "La contraseña debe tener al menos 8 caracteres");
   }
 
   if (password !== confirmPassword) {
-    fail(400, "Le password non coincidono");
+    fail(400, "Las contraseñas no coinciden");
   }
 
   const passwordHash = hashPassword(password);
@@ -620,12 +620,12 @@ app.post("/api/auth/accept-invite", asyncRoute(async (req, res) => {
 
     const invite = consumeInvite(state, token);
     if (!invite) {
-      fail(400, "Token non valido o scaduto");
+      fail(400, "El token no es válido o ha vencido");
     }
 
     const user = findUser(state, invite.username);
     if (!user) {
-      fail(404, "Utente non trovato");
+      fail(404, "Usuario no encontrado");
     }
 
     user.passwordHash = passwordHash;
@@ -652,7 +652,7 @@ app.post("/api/auth/logout", requireSession, asyncRoute(async (req, res) => {
     logAudit(state, req.auth.user.username, "logout", req.auth.user.username);
   });
 
-  res.json({ message: "Logout eseguito" });
+  res.json({ message: "Sesión cerrada" });
 }));
 
 app.put("/api/me/password", requireSession, asyncRoute(async (req, res) => {
@@ -663,15 +663,15 @@ app.put("/api/me/password", requireSession, asyncRoute(async (req, res) => {
   const passwordState = loadFreshState();
   const currentUser = findUser(passwordState, req.auth.user.username);
   if (!currentUser || !currentUser.passwordHash || !verifyPassword(currentPassword, currentUser.passwordHash)) {
-    fail(400, "Password attuale non corretta");
+    fail(400, "La contraseña actual es incorrecta");
   }
 
   if (!newPassword || newPassword.length < 8) {
-    fail(400, "La nuova password deve avere almeno 8 caratteri");
+    fail(400, "La nueva contraseña debe tener al menos 8 caracteres");
   }
 
   if (newPassword !== confirmPassword) {
-    fail(400, "Le password non coincidono");
+    fail(400, "Las contraseñas no coinciden");
   }
 
   const currentPasswordHash = currentUser.passwordHash;
@@ -681,11 +681,11 @@ app.put("/api/me/password", requireSession, asyncRoute(async (req, res) => {
 
     const user = findUser(state, req.auth.user.username);
     if (!user) {
-      fail(404, "Utente non trovato");
+      fail(404, "Usuario no encontrado");
     }
 
     if (user.passwordHash !== currentPasswordHash) {
-      fail(400, "Password attuale non corretta");
+      fail(400, "La contraseña actual es incorrecta");
     }
 
     user.passwordHash = newPasswordHash;
@@ -694,14 +694,14 @@ app.put("/api/me/password", requireSession, asyncRoute(async (req, res) => {
     logAudit(state, user.username, "change-password", user.username);
   });
 
-  res.json({ message: "Password aggiornata" });
+  res.json({ message: "Contraseña actualizada" });
 }));
 
 app.get("/api/me", requireSession, (req, res) => {
   const state = loadFreshState();
   const user = findUser(state, req.auth.user.username);
   if (!user) {
-    return res.status(404).json({ error: "Utente non trovato" });
+    return res.status(404).json({ error: "Usuario no encontrado" });
   }
 
   const stats = getUserStats(user.username, state.accessLog);
@@ -790,11 +790,11 @@ app.post("/api/admin/users", requireSession, requireAdmin, asyncRoute(async (req
     }
 
     if (!validation.email) {
-      fail(400, "Email obbligatoria");
+      fail(400, "El email es obligatorio");
     }
 
     if (state.users.some((user) => normalizeUsername(user.username) === validation.normalizedUsername)) {
-      fail(400, "Utente gia esistente");
+      fail(400, "El usuario ya existe");
     }
 
     const now = nowIso();
@@ -838,12 +838,12 @@ app.put("/api/admin/users/:username", requireSession, requireAdmin, asyncRoute(a
 
     const user = findUser(state, req.params.username);
     if (!user) {
-      fail(404, "Utente non trovato");
+      fail(404, "Usuario no encontrado");
     }
 
     const role = cleanString(req.body.role ?? user.role).toLowerCase();
     if (!["admin", "user"].includes(role)) {
-      fail(400, "Ruolo non valido");
+      fail(400, "El rol no es válido");
     }
 
     if (req.body.email !== undefined) {
@@ -860,7 +860,7 @@ app.put("/api/admin/users/:username", requireSession, requireAdmin, asyncRoute(a
 
     const invalidReportIds = reportIds.filter((reportId) => !findReport(state, reportId));
     if (invalidReportIds.length) {
-      fail(400, `Report non trovati: ${invalidReportIds.join(", ")}`);
+      fail(400, `Reportes no encontrados: ${invalidReportIds.join(", ")}`);
     }
 
     if (typeof req.body.active === "boolean") {
@@ -911,7 +911,7 @@ app.post("/api/admin/users/:username/resend-invite", requireSession, requireAdmi
 
     const user = findUser(state, req.params.username);
     if (!user) {
-      fail(404, "Utente non trovato");
+      fail(404, "Usuario no encontrado");
     }
 
     const inviteToken = createInviteForUser(state, user.username, req.auth.user.username);
@@ -936,16 +936,16 @@ app.post("/api/admin/invites/:token/send", requireSession, requireAdmin, asyncRo
 
     const invite = state.invites.find((entry) => entry.token === token && !entry.usedAt);
     if (!invite || isExpired(invite.expiresAt)) {
-      fail(404, "Token non trovato, gia utilizzato o scaduto");
+      fail(404, "Token no encontrado, ya utilizado o vencido");
     }
 
     const user = findUser(state, invite.username);
     if (!user) {
-      fail(404, "Utente associato al token non trovato");
+      fail(404, "No se encontró el usuario asociado al token");
     }
 
     if (!user.email) {
-      fail(400, "Aggiungi e salva prima l'email nel profilo dello user");
+      fail(400, "Primero agrega y guarda el email en el perfil del usuario");
     }
 
     return {
@@ -960,7 +960,7 @@ app.post("/api/admin/invites/:token/send", requireSession, requireAdmin, asyncRo
     try {
       await recordInviteEmailSent(token, result.user.username, result.user.email, req.auth.user.username);
     } catch (error) {
-      console.error("Email inviata, ma registrazione audit fallita", error);
+      console.error("El email se envió, pero falló el registro de auditoría", error);
     }
   }
 
@@ -980,12 +980,12 @@ app.delete("/api/admin/users/:username", requireSession, requireAdmin, asyncRout
 
     const normalizedUsername = normalizeUsername(req.params.username);
     if (normalizedUsername === normalizeUsername(req.auth.user.username)) {
-      fail(400, "Non puoi eliminare il tuo account. Puoi solo cambiare la password.");
+      fail(400, "No puedes eliminar tu propia cuenta. Solo puedes cambiar la contraseña.");
     }
 
     const index = state.users.findIndex((user) => normalizeUsername(user.username) === normalizedUsername);
     if (index === -1) {
-      fail(404, "Utente non trovato");
+      fail(404, "Usuario no encontrado");
     }
 
     const [removedUser] = state.users.splice(index, 1);
@@ -994,7 +994,7 @@ app.delete("/api/admin/users/:username", requireSession, requireAdmin, asyncRout
     logAudit(state, req.auth.user.username, "delete-user", removedUser.username);
   });
 
-  res.json({ message: "Utente eliminato" });
+  res.json({ message: "Usuario eliminado" });
 }));
 
 app.post("/api/admin/reports", requireSession, requireAdmin, asyncRoute(async (req, res) => {
@@ -1007,19 +1007,19 @@ app.post("/api/admin/reports", requireSession, requireAdmin, asyncRoute(async (r
     const active = req.body.active !== false;
 
     if (!id) {
-      fail(400, "Codice report obbligatorio");
+      fail(400, "El código del reporte es obligatorio");
     }
 
     if (!title) {
-      fail(400, "Titolo report obbligatorio");
+      fail(400, "El título del reporte es obligatorio");
     }
 
     if (!url) {
-      fail(400, "URL report obbligatorio");
+      fail(400, "La URL del reporte es obligatoria");
     }
 
     if (state.reports.some((entry) => entry.id === id)) {
-      fail(400, "Report gia esistente");
+      fail(400, "El reporte ya existe");
     }
 
     const now = nowIso();
@@ -1045,14 +1045,14 @@ app.put("/api/admin/reports/:id", requireSession, requireAdmin, asyncRoute(async
 
     const currentReport = findReport(state, req.params.id);
     if (!currentReport) {
-      fail(404, "Report non trovato");
+      fail(404, "Reporte no encontrado");
     }
 
     const title = cleanString(req.body.title ?? currentReport.title);
     const url = cleanString(req.body.url ?? currentReport.url);
 
     if (!title || !url) {
-      fail(400, "Titolo e URL sono obbligatori");
+      fail(400, "El título y la URL son obligatorios");
     }
 
     currentReport.title = title;
@@ -1080,7 +1080,7 @@ app.delete("/api/admin/reports/:id", requireSession, requireAdmin, asyncRoute(as
     const normalizedReportId = normalizeReportId(req.params.id);
     const index = state.reports.findIndex((report) => report.id === normalizedReportId);
     if (index === -1) {
-      fail(404, "Report non trovato");
+      fail(404, "Reporte no encontrado");
     }
 
     const [removedReport] = state.reports.splice(index, 1);
@@ -1091,7 +1091,7 @@ app.delete("/api/admin/reports/:id", requireSession, requireAdmin, asyncRoute(as
     logAudit(state, req.auth.user.username, "delete-report", removedReport.id);
   });
 
-  res.json({ message: "Report eliminato" });
+  res.json({ message: "Reporte eliminado" });
 }));
 
 app.get("/api/admin/audit", requireSession, requireAdmin, (req, res) => {
@@ -1115,7 +1115,7 @@ app.get("/api/admin/export", requireSession, requireAdmin, (req, res) => {
 });
 
 app.use((req, res) => {
-  res.status(404).json({ error: "Endpoint non trovato" });
+  res.status(404).json({ error: "Endpoint no encontrado" });
 });
 
 app.use((error, req, res, next) => {
@@ -1124,7 +1124,7 @@ app.use((error, req, res, next) => {
   }
 
   const status = error instanceof ApiError ? error.status : 500;
-  const message = error instanceof ApiError ? error.message : "Errore interno del server";
+  const message = error instanceof ApiError ? error.message : "Error interno del servidor";
   if (status >= 500) {
     console.error(error);
   }
@@ -1132,5 +1132,5 @@ app.use((error, req, res, next) => {
 });
 
 app.listen(serverPort, () => {
-  console.log(`Server in ascolto sulla porta ${serverPort}`);
+  console.log(`Servidor escuchando en el puerto ${serverPort}`);
 });

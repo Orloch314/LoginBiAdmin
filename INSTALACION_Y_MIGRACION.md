@@ -129,8 +129,8 @@ La migracion puede crear invitaciones para usuarios que todavia no tienen email.
 1. Entrar al panel como administrador.
 2. Seleccionar el usuario migrado.
 3. Agregar su email y guardar el perfil.
-4. Ir a `Inviti pendenti`.
-5. Presionar `Invia token per email` al lado del token correspondiente.
+4. Ir a `Invitaciones pendientes`.
+5. Presionar `Enviar token por email` al lado del token correspondiente.
 
 El portal envia el token ya existente y no genera uno nuevo. El envio es exclusivamente individual; no existe una accion masiva, para reducir el riesgo de bloqueo por spam.
 
@@ -142,29 +142,29 @@ Credenciales iniciales:
 
 ```text
 Usuario: admin
-Password: admin123!
+Contraseña: admin123!
 ```
 
-Recomendacion: despues del primer acceso, cambiar la password desde el panel administrador.
+Recomendación: después del primer acceso, cambiar la contraseña desde el panel administrador.
 
-El administrador no visualiza reportes asignados y no puede eliminar su propio usuario. Solo puede cambiar su password.
+El administrador no visualiza reportes asignados y no puede eliminar su propio usuario. Solo puede cambiar su contraseña.
 
 ## 6. Configurar SMTP y texto de invitacion
 
-Entrar al portal como administrador y abrir la seccion `Configuracion SMTP`.
+Entrar al portal como administrador y abrir la sección `Configuración SMTP`.
 
 Completar:
 
 - Host SMTP
-- Porta SMTP
+- Puerto SMTP
 - Usuario SMTP
-- Password SMTP
-- Nombre remitente
-- Email remitente
-- URL portal
-- Pagina invitacion
-- Objeto email
-- Texto email base
+- Contraseña SMTP
+- Nombre del remitente
+- Email del remitente
+- URL del portal
+- Página de invitación
+- Asunto del email
+- Texto base del email
 
 El sistema guarda esta configuracion en:
 
@@ -178,7 +178,7 @@ Cuando se envia una invitacion, el portal agrega automaticamente:
 
 - Usuario
 - Token
-- Link de invitacion
+- Enlace de invitación
 
 Por eso el texto base no necesita incluir manualmente esos datos.
 
@@ -211,9 +211,9 @@ El servidor escucha en:
 http://localhost:3000
 ```
 
-En produccion, el hosting debe redirigir el dominio publico al proceso Node.js del portal.
+En producción, el hosting debe redirigir el dominio público al proceso Node.js del portal, que escucha siempre en el puerto `3000`.
 
-El servidor utiliza automaticamente la variable `PORT` asignada por el hosting. Para limitar las conexiones SMTP bloqueadas se puede configurar:
+Para limitar las conexiones SMTP bloqueadas se puede configurar:
 
 ```text
 SMTP_TIMEOUT_MS=15000

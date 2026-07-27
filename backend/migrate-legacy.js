@@ -94,5 +94,5 @@ writeJson(dataFiles.sessions, []);
 writeJson(dataFiles.accessLog, []);
 writeJson(dataFiles.auditLog, []);
 
-console.log(`Migrated ${users.length} users and ${reports.length} reports.`);
-console.log("Invites have been generated in backend/data/invites.json.");
+console.log(`Se migraron ${users.length} usuarios y ${reports.length} reportes.`);
+console.log("Las invitaciones se generaron en backend/data/invites.json.");
