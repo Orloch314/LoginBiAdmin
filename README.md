@@ -34,6 +34,12 @@ Abrir `http://localhost:3000/login.html`.
 
 El portal utiliza escrituras atómicas y un bloqueo compartido para evitar pérdidas de usuarios o sesiones cuando Passenger inicia varios procesos.
 
+En cPanel/Passenger se debe configurar:
+
+- raíz de la aplicación: la carpeta que contiene `package.json`;
+- archivo de inicio: `app.js`;
+- versión de Node.js: 18 o superior.
+
 Variables de entorno disponibles:
 
 - El servidor utiliza siempre el puerto `3000`.

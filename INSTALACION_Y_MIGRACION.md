@@ -211,7 +211,13 @@ El servidor escucha en:
 http://localhost:3000
 ```
 
-En producción, el hosting debe redirigir el dominio público al proceso Node.js del portal, que escucha siempre en el puerto `3000`.
+En cPanel/Passenger configurar:
+
+- raiz de la aplicacion: la carpeta que contiene `package.json`;
+- archivo de inicio de la aplicacion: `app.js`;
+- version de Node.js: 18 o superior.
+
+En producción, Passenger controla la comunicación pública con el proceso Node.js. El portal mantiene `3000` como puerto de escucha solicitado por la aplicación.
 
 Para limitar las conexiones SMTP bloqueadas se puede configurar:
 
